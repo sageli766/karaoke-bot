@@ -60,7 +60,7 @@ async def add(ctx, *args):
     global current_session
     for song_title in args:
         if current_session:
-            current_session.add_to_queue(song_title, ctx)
+            current_session.add_to_queue(song_title, ctx.author)
             embed = discord.Embed()
             embed.add_field(name='Success', value=f'Added **{song_title}** to the queue.')
             await ctx.send(embed=embed)
@@ -102,6 +102,7 @@ async def getqueue(ctx):
 
     def update_queue(pg):
         global current_session
+
         new_embed = discord.Embed(
             title='Current queue:',
             color=discord.Color.blue()
@@ -109,8 +110,12 @@ async def getqueue(ctx):
 
         new_embed.set_footer(text=f'Page {pg} of {pagemax}')
 
-        for i in range(pg - 1, pg * 5 - 1):
-            new_embed.add_field(name=f'{current_session.queue[i]}')
+        start_index = (pg - 1) * 5
+        end_index = min(pg * 5, len(current_session.queue))
+
+        for i in range(start_index, end_index):
+            song, user = current_session.queue[i]
+            new_embed.add_field(name=f'{song}', value=f'{user}', inline=False)
 
         return new_embed
 
@@ -120,22 +125,38 @@ async def getqueue(ctx):
     # initial page
     queue_list = await ctx.send(embed=update_queue(page))
     
-    if pg > 1:
-        await queue_list.add_reaction('➡️')
-    if pg < pagemax:
+    if page > 1:
         await queue_list.add_reaction('⬅️')
+    if page < pagemax:
+        await queue_list.add_reaction('➡️')
 
     try:
-        reaction, _ = await bot.wait_for('reaction_add', timeout=30, check=check)
-        if str(reaction.emoji) == '⬅️' and page > 1:
-            page += 1
-            new_embed = update_queue(page)
-            await queue_list.edit(embed=new_embed)
+        while True:
+            reaction, _ = await bot.wait_for('reaction_add', timeout=30, check=check)
+            if str(reaction.emoji) == '➡️' and page < pagemax:
+                page += 1
+                new_embed = update_queue(page)
+                await queue_list.edit(embed=new_embed)
+                await queue_list.remove_reaction('➡️', ctx.author)
+                if page == pagemax:
+                    await queue_list.remove_reaction('➡️', bot.user)
+                if page - 1 == 1:
+                    await queue_list.remove_reaction('➡️', bot.user)
+                    await queue_list.add_reaction('⬅️')
+                    await queue_list.add_reaction('➡️')
 
-        if str(reaction.emoji) == '⬅️' and page < pagemax:
-            page -= 1
-            new_embed = update_queue(page)
-            await queue_list.edit(embed=new_embed)
+            if str(reaction.emoji) == '⬅️' and page > 1:
+                page -= 1
+                new_embed = update_queue(page)
+                await queue_list.edit(embed=new_embed)
+                await queue_list.remove_reaction('⬅️', ctx.author)
+                if page == 1:
+                    await queue_list.remove_reaction('⬅️', bot.user)
+                if page + 1 == pagemax:
+                    await queue_list.remove_reaction('⬅️', bot.user)
+                    await queue_list.add_reaction('⬅️')
+                    await queue_list.add_reaction('➡️')
     except:
         pass
+
 bot.run(f'{client_id}')

@@ -11,9 +11,9 @@ class Karaoke():
         )
         self.title = title
 
-    def add_to_queue(self, song_title):
+    def add_to_queue(self, song_title, user):
         for i in song_title:
-            self.queue.append(song_title)
+            self.queue.append((song_title, user))
 
     def remove_from_queue(self, pos):
         self.queue.pop(pos)
