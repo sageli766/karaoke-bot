@@ -1,12 +1,16 @@
 import discord
 
 class Karaoke():
-    def __init__(self):
-        queue = []
-        queue_embed = discord.Embed(
-            title='Current Karaoke Queue',
-            color=discord.Color.blue(),
+    queue = []
+    queue_embed = None
+    title = ''
+
+    def __init__(self, title):
+        self.queue_embed = discord.Embed(
+            title=f'{title}',
+            color=discord.Color.blue()
         )
+        self.title = title
 
     def add_to_queue(self, song_title, user):
         self.queue.append(song_title)
@@ -14,6 +18,10 @@ class Karaoke():
 
     def remove_from_queue(self, pos):
         self.queue.pop(pos)
+
+    def clear(self):
+        self.queue = []
+        self.queue_embed.clear_fields()
 
     def completed(self):
         self.queue.pop()
