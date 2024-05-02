@@ -5,10 +5,6 @@ class Karaoke():
     title = ''
 
     def __init__(self, title):
-        self.queue_embed = discord.Embed(
-            title=f'{title}',
-            color=discord.Color.blue()
-        )
         self.title = title
 
     def add_to_queue(self, song_title, user):
@@ -20,10 +16,3 @@ class Karaoke():
 
     def clear(self):
         self.queue = []
-
-    def completed(self):
-        self.queue.pop()
-
-    def get_queue(self):
-        return self.queue
-

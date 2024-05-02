@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from karaoke import Karaoke
-from cursorcontrol import *
+from damcontrol import *
 import sys
 import pyautogui
 
@@ -163,9 +163,23 @@ async def getqueue(ctx):
 
 @bot.command()
 async def inputsong(ctx):
+    global current_session
     curr_song, _ = current_session.queue[0]
-    queue(curr_song)
+    queue(to_romaji(curr_song))
     embed = discord.Embed()
     embed.add_field(name='Success', value=f'Queuing **{curr_song}**')
+    await ctx.send(embed=embed)
+
+@bot.command()
+async def next(ctx):
+    global current_session
+    if current_session:
+        curr_song, user = current_session.queue[0]
+        await inputsong(curr_song)
+        current_session.remove_from_queue(0)
+    else:
+        embed = discord.Embed()
+        embed.add_field(name='Error', value='Please start a karaoke session and input at least one song.')
+        await ctx.send(embed=embed)
 
 bot.run(f'{client_id}')
