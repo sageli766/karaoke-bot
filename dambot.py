@@ -1,7 +1,9 @@
 import discord
 from discord.ext import commands
 from karaoke import Karaoke
+from cursorcontrol import *
 import sys
+import pyautogui
 
 client_id = sys.argv[1]
 intents = discord.Intents.default()
@@ -10,7 +12,7 @@ bot = commands.Bot(command_prefix='$', intents=intents)
 
 current_session = None
 
-running = False
+screen_width, screen_height = pyautogui.size()
 
 @bot.event
 async def on_ready():
@@ -158,5 +160,12 @@ async def getqueue(ctx):
                     await queue_list.add_reaction('➡️')
     except:
         pass
+
+@bot.command()
+async def inputsong(ctx):
+    curr_song, _ = current_session.queue[0]
+    queue(curr_song)
+    embed = discord.Embed()
+    embed.add_field(name='Success', value=f'Queuing **{curr_song}**')
 
 bot.run(f'{client_id}')
