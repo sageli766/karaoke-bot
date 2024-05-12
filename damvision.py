@@ -12,6 +12,7 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tessera
 
 class Button(Enum):
     RESTART = './images/restart.png'
+    RESTART_YES = './images/restartyes.png'
     # PAUSE = './images/pause.png' # gotta figure out how this button actually works in the app, appears greyed out all the time
     SKIP = './images/skip.png'
     KEYDOWN = './images/keydown.png'
@@ -57,8 +58,8 @@ def click_button(button):
         pyautogui.moveTo(x, y)
         pyautogui.mouseDown()
         pyautogui.mouseUp()
-        pyautogui.mouseDown()
-        pyautogui.mouseUp()
+        # pyautogui.mouseDown()
+        # pyautogui.mouseUp()
 
     logger.debug("Button " + str(button) + " clicked with confidence " + str(max_val))
     

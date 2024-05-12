@@ -13,6 +13,9 @@ class Karaoke():
     def queue_length(self):
         return len(self.queue)
     
+    def get_current_song(self):
+        return self.queue[0]
+    
     def add_to_queue(self, song_title, author, user):
         self.queue.append((song_title, author, user))
 

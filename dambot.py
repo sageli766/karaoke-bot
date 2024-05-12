@@ -463,9 +463,9 @@ class QueueMenu(View):
         for i in range(start_index, end_index):
             song, author, user = current_session.queue[i % 5]
             if i == 0:
-                embed.add_field(name=f'▶️ {song}', value=f'by {author} • Queued by {user}', inline=False)
+                embed.add_field(name=f'▶️ {song}', value=f'{author} • Queued by {user}', inline=False)
             else:
-                embed.add_field(name=str(i + 1) + f'. {song}', value=f'by {author} • Queued by {user}', inline=False)
+                embed.add_field(name=str(i + 1) + f'. {song}', value=f'{author} • Queued by {user}', inline=False)
         
         if updated:
             embed.set_footer(text=f'Page {self.page} of {self.pagemax}', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s')
@@ -529,5 +529,84 @@ class QueueMenu(View):
 async def q(ctx):
     view = QueueMenu(ctx, None)
     await view.show_results()
+
+SONGS_PER_PAGE = 5
+class ControlMenu(View):
+    global current_session
+    def __init__(self, ctx, message):
+        super().__init__()
+        self.ctx = ctx
+        self.page = 1
+        self.pagemax = (current_session.queue_length() + SONGS_PER_PAGE - 1) // SONGS_PER_PAGE
+        self.message = message
+
+    async def check_valid(self):
+
+        if not damvision.playing_song():
+            return False
+
+        if current_session.queue and fuzz.ratio(current_session.get_current_song()[0], damvision.playing_song()) < 80: #TODO give more datapoints later, like combine author
+            return False
+        
+        return True
+
+    async def interaction_check(self, interaction):
+        return interaction.user == self.ctx.author
+
+    @button(label="Stop", style=discord.ButtonStyle.red, row=1)
+    async def previous_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        if self.check_valid:
+            self.message.edit(content='Skipping song...', view=None)
+            self.message.delete(delay=5)
+            click_button(Button.SKIP)
+            time.sleep(5)
+            damvision.click_button(Button.RESTART_YES)
+        else:
+            self.message.edit(content="Error: different song. Retry $c", view=None)
+
+    @button(label="Restart", style=discord.ButtonStyle.red, row=1)
+    async def restart(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        if self.check_valid:
+            click_button(Button.RESTART)
+        else:
+            self.message.edit(content="Error: different song. Retry $c", view=None)
+
+    @button(label="Close Menu", style=discord.ButtonStyle.grey, row=1)
+    async def close_menu(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        damvision.click_button(Button.TOP)
+        await self.message.delete()
+    
+    @button(label="Key -", style=discord.ButtonStyle.blurple, row=2)
+    async def key_down(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        if self.check_valid:
+            click_button(Button.KEYDOWN)
+        else:
+            self.message.edit(content="Error: different song. Retry $c", view=None)
+
+    @button(label="Key +", style=discord.ButtonStyle.blurple, row=2)
+    async def key_up(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        if self.check_valid:
+            click_button(Button.KEYUP)
+        else:
+            self.message.edit(content="Error: different song. Retry $c", view=None)
+
+
+
+# controls
+@bot.command()
+async def c(ctx):
+    global current_session
+    if not damvision.playing_song():
+        await ctx.send('No song is currently playing.', delete_after=3)
+        return
+    message = await ctx.send("Controls for: **" + current_session.get_current_song()[0] + "** by **" + current_session.get_current_song()[1] + "**")
+    view = ControlMenu(ctx, message)
+    await message.edit(view=view)
+    await message.delete(delay=60)
 
 bot.run(f'{client_id}')
