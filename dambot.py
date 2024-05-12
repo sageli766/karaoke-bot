@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 from karaoke import Karaoke
 from damcontrol import *
+from controlpanel import ControlPanelView
+import asyncio
 import sys
 import pyautogui
 
@@ -195,36 +197,29 @@ async def next(ctx):
 @bot.command()
 async def controls(ctx):
     panel = discord.Embed()
-    panel.add_field(name='Control Panel', value='Control the current song by reacting to the emojis below. This panel will stay active for one minute.')
+    panel.add_field(name='Control Panel', value='Control the current song by clicking the buttons below. This panel will stay active for one minute.')
 
-    ctrl_emojis = ['🛑', '⏯️', '🔄', '⬆️', '⬇️']
+    view = ControlPanelView()
 
-    def check(reaction, user):
-        return str(reaction.emoji) in ctrl_emojis
-
-    await ctx.send(embed=panel)
-    for emoji in ctrl_emojis:
-        await panel.add_reaction(emoji)
+    await ctx.send(embed=panel, view=view)
 
     try:
-        while True:
-            reaction, _ = await bot.wait_for('reaction_add', timeout=120, check=check)
-            if str(reaction.emoji) == '🛑':
-                await panel.remove_reaction('🛑', ctx.author)
-                cancel()
-            elif str(reaction.emoji) == '⏯️':
-                await panel.remove_reaction('⏯️', ctx.author)
-                pause()
-            elif str(reaction.emoji) == '🔄':
-                await panel.remove_reaction('🔄', ctx.author)
-                restart()
-            elif str(reaction.emoji) == '⬆️':
-                await panel.remove_reaction('⬆️', ctx.author)
-                keyup()
-            elif str(reaction.emoji) == '⬇️':
-                await panel.remove_reaction('⬇️', ctx.author)
-                keydown()
-    except:
-        pass
+        interaction = await bot.wait_for('button_click', timeout=120)
+        await interaction.respond(type=discord.InteractionType.DeferredUpdateMessage)
+
+        if interaction.component.custom_id == 'stop':
+            ctx.send('debug')
+            cancel()
+        elif interaction.component.custom_id == 'pause':
+            pause()
+        elif interaction.component.custom_id == 'restart':
+            restart()
+        elif interaction.component.custom_id == 'keyup':
+            keyup()
+        elif interaction.component.custom_id == 'keydown':
+            keydown()
+    except asyncio.TimeoutError:
+        await ctx.send("Control panel timed out.", delete_after=30)
+
 
 bot.run(f'{client_id}')
