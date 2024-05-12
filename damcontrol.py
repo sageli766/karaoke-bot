@@ -11,23 +11,23 @@ def to_romaji(song: str) -> str:
         romaji_output += item['hepburn']
     return romaji_output
 
-def parse_instructions(instructions):
-    def enter():
-        pyautogui.keyDown('enter')
-        pyautogui.keyUp('enter')
-    def right():
-        pyautogui.keyDown('right')
-        pyautogui.keyUp('right')
-    def left():
-        pyautogui.keyDown('left')
-        pyautogui.keyUp('left')
-    def down():
-        pyautogui.keyDown('down')
-        pyautogui.keyUp('down')
-    def up():
-        pyautogui.keyDown('up')
-        pyautogui.keyUp('up')
+def enter():
+    pyautogui.keyDown('enter')
+    pyautogui.keyUp('enter')
+def right():
+    pyautogui.keyDown('right')
+    pyautogui.keyUp('right')
+def left():
+    pyautogui.keyDown('left')
+    pyautogui.keyUp('left')
+def down():
+    pyautogui.keyDown('down')
+    pyautogui.keyUp('down')
+def up():
+    pyautogui.keyDown('up')
+    pyautogui.keyUp('up')
 
+def parse_instructions(instructions):
     for action, delay in instructions:
         if action == 'l':
             left()
@@ -39,51 +39,84 @@ def parse_instructions(instructions):
             down()
         elif action == 'enter':
             enter()
-        time.sleep(0.2)
+        else:
+            pass
+        time.sleep(delay)
 
-def queue(song, **kwargs):
+def queue(song, key, **kwargs):
     if kwargs:
         time.sleep(kwargs['delay'])
-
-    parse_instructions(['r', 'enter'])
+    pyautogui.moveTo(1500, 200, duration=0.5)
+    pyautogui.mouseDown()
+    pyautogui.mouseUp()
+    pyautogui.mouseDown()
+    pyautogui.mouseUp()
+    time.sleep(0.5)
+    parse_instructions([('enter', 0.2)])
     pyautogui.typewrite(song)
-    parse_instructions(['enter', 'enter', 'd', 'd', 'r', 'r', 'r'])
-    enter()
-    time.sleep(0.5)
-    enter()
-    time.sleep(0.5)
-    enter()
+    time.sleep(1)
+    parse_instructions([('enter', 0.2), 
+                        ('enter', 0.2), 
+                        ('pass', 3),
+                        ('d', 0.1), 
+                        ('d', 0.1), 
+                        ('r', 0.1), 
+                        ('r', 0.1), 
+                        ('r', 2),
+                        ('enter', 2), 
+                        ('enter', 3),
+                        ('u', 0.1),
+                        ('l', 0.1),
+                        ('l', 0.1),
+                        ('enter', 0)
+                        ])
+    
+    for _ in range(abs(key)):
+        if key > 0:
+            up()
+        elif key < 0:
+            down()
+        time.sleep(0.2)
 
-    # pyautogui.moveTo(1490, 360)
-    #
-    # pyautogui.keyDown('enter')
-    # pyautogui.keyUp('enter')
-    #
-    # pyautogui.keyDown('enter')
-    # pyautogui.keyUp('enter')
-    #
-    # pyautogui.typewrite(f'{song}')
-    #
-    # pyautogui.keyDown('enter')
-    # pyautogui.keyUp('enter')
-    #
-    # pyautogui.moveTo(1490, 430)
-    #
-    # time.sleep(3)
-    #
-    # pyautogui.mouseDown()
-    # pyautogui.mouseUp()
-    #
-    # time.sleep(1)
-    #
-    # pyautogui.mouseDown()
-    # pyautogui.mouseUp()
-    #
-    # time.sleep(3)
-    #
-    # pyautogui.moveTo(1690, 830)
-    #
-    # pyautogui.mouseDown()
-    # pyautogui.mouseUp()
+    parse_instructions([('enter', 0.1),
+                        ('r', 0.1),
+                        ('r', 0.1),
+                        ('d', 0.2),
+                        ('enter', 0.2)])
 
-# queue(romaji_output)
+    pyautogui.moveTo(610, 760, duration=0.5)
+    time.sleep(2)
+    pyautogui.mouseDown()
+    time.sleep(0.2)
+    pyautogui.mouseUp()
+
+def cancel():
+    pyautogui.moveTo(610, 950, duration=0.5)
+    pyautogui.mouseDown()
+    time.sleep(0.2)
+    pyautogui.mouseUp()
+
+def pause():
+    pyautogui.moveTo(750, 950, duration=0.5)
+    pyautogui.mouseDown()
+    time.sleep(0.2)
+    pyautogui.mouseUp()
+
+def restart():
+    pyautogui.moveTo(900, 950, duration=0.5)
+    pyautogui.mouseDown()
+    time.sleep(0.2)
+    pyautogui.mouseUp()
+
+def keyup():
+    pyautogui.moveTo(1030, 950, duration=0.5)
+    pyautogui.mouseDown()
+    time.sleep(0.2)
+    pyautogui.mouseUp()
+
+def keydown():
+    pyautogui.moveTo(1160, 950, duration=0.5)
+    pyautogui.mouseDown()
+    time.sleep(0.2)
+    pyautogui.mouseUp()
+

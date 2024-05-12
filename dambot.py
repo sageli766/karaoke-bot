@@ -53,23 +53,30 @@ async def kend(ctx):
     global current_session
     current_session = None
     embed=discord.Embed()
-    embed.add_field(name='Success', value=f'Current session **{current_session.title}**.')
+    embed.add_field(name='Success', value=f'Current session **{current_session.title}** ended.')
     await ctx.send(embed=embed)
 
 # adds a song to the current karaoke session's queue
 @bot.command()
-async def add(ctx, *args):
+async def add(ctx, song_title, key=0):
+# async def add(ctx, *args):
     global current_session
-    for song_title in args:
-        if current_session:
-            current_session.add_to_queue(song_title, ctx.author)
+    # for song_title in args:
+    if current_session:
+        current_session.add_to_queue(song_title, ctx.author, key)
+        if key == 0:
             embed = discord.Embed()
             embed.add_field(name='Success', value=f'Added **{song_title}** to the queue.')
             await ctx.send(embed=embed)
         else:
+            keytext = '+' + str(key) if key > 0 else key
             embed = discord.Embed()
-            embed.add_field(name='Error', value='Start a karaoke session to add songs.')
+            embed.add_field(name='Success', value=f'Added **{song_title}** with key **{keytext}** to the queue.')
             await ctx.send(embed=embed)
+    else:
+        embed = discord.Embed()
+        embed.add_field(name='Error', value='Start a karaoke session to add songs.')
+        await ctx.send(embed=embed)
 
 # removes a song from the karaoke session's queue from a specified position (1-indexed)
 @bot.command()
@@ -93,6 +100,10 @@ async def clear(ctx):
 @bot.command()
 async def getqueue(ctx):
     global current_session
+    if not current_session:
+        embed = discord.Embed()
+        embed.add_field(name='Error', value='Please queue at least one song to view.')
+        await ctx.send(embed=embed)
     queuelen = len(current_session.queue)
     page = 1
     pagemax = queuelen // 5 + 1
@@ -120,6 +131,7 @@ async def getqueue(ctx):
             new_embed.add_field(name=f'{song}', value=f'{user}', inline=False)
 
         return new_embed
+
 
     def check(reaction, user):
         return user == ctx.author and str(reaction.emoji) in ['⬅️', '➡️']
@@ -162,24 +174,57 @@ async def getqueue(ctx):
         pass
 
 @bot.command()
-async def inputsong(ctx):
-    global current_session
-    curr_song, _ = current_session.queue[0]
-    queue(to_romaji(curr_song))
-    embed = discord.Embed()
-    embed.add_field(name='Success', value=f'Queuing **{curr_song}**')
-    await ctx.send(embed=embed)
-
-@bot.command()
 async def next(ctx):
     global current_session
-    if current_session:
-        curr_song, user = current_session.queue[0]
-        await inputsong(curr_song)
+    if not current_session.queue:
+        embed = discord.Embed()
+        embed.add_field(name='Error', value='Please have at least one song queued.')
+        await ctx.send(embed=embed)
+    elif current_session:
+        curr_song, user, key = current_session.queue[0]
+        queue(to_romaji(curr_song), key)
         current_session.remove_from_queue(0)
+        embed = discord.Embed()
+        embed.add_field(name='Success', value=f'Queueing {curr_song} requested by {user}.')
+        await ctx.send(embed=embed)
     else:
         embed = discord.Embed()
         embed.add_field(name='Error', value='Please start a karaoke session and input at least one song.')
         await ctx.send(embed=embed)
+
+@bot.command()
+async def controls(ctx):
+    panel = discord.Embed()
+    panel.add_field(name='Control Panel', value='Control the current song by reacting to the emojis below. This panel will stay active for one minute.')
+
+    ctrl_emojis = ['🛑', '⏯️', '🔄', '⬆️', '⬇️']
+
+    def check(reaction, user):
+        return str(reaction.emoji) in ctrl_emojis
+
+    await ctx.send(embed=panel)
+    for emoji in ctrl_emojis:
+        await panel.add_reaction(emoji)
+
+    try:
+        while True:
+            reaction, _ = await bot.wait_for('reaction_add', timeout=120, check=check)
+            if str(reaction.emoji) == '🛑':
+                await panel.remove_reaction('🛑', ctx.author)
+                cancel()
+            elif str(reaction.emoji) == '⏯️':
+                await panel.remove_reaction('⏯️', ctx.author)
+                pause()
+            elif str(reaction.emoji) == '🔄':
+                await panel.remove_reaction('🔄', ctx.author)
+                restart()
+            elif str(reaction.emoji) == '⬆️':
+                await panel.remove_reaction('⬆️', ctx.author)
+                keyup()
+            elif str(reaction.emoji) == '⬇️':
+                await panel.remove_reaction('⬇️', ctx.author)
+                keydown()
+    except:
+        pass
 
 bot.run(f'{client_id}')
