@@ -9,6 +9,7 @@ import asyncio
 import sys
 import pyautogui
 import damvision
+from fuzzywuzzy import fuzz
 
 client_id = sys.argv[1]
 intents = discord.Intents.default()
@@ -111,6 +112,7 @@ async def clear(ctx):
     await ctx.send(embed=embed)
 
 # gives a list of the current queue
+# may become deprecated - see q()
 @bot.command()
 async def getqueue(ctx):
     global current_session
@@ -187,6 +189,7 @@ async def getqueue(ctx):
     except:
         pass
 
+# may become deprecated
 @bot.command()
 async def next(ctx):
     global current_session
@@ -292,8 +295,8 @@ class SearchMenu(View):
         return embed
 
     async def show_results(self):
-            await self.message.edit(content='', embed=await self.update_results(), view=self)
-            #TODO add timeout if no interaction
+        await self.message.edit(content='', embed=await self.update_results(), view=self)
+        #TODO add timeout if no interaction
 
 
     async def interaction_check(self, interaction):
@@ -343,48 +346,52 @@ class SearchMenu(View):
     # too lazy to make a function for these lmao
     @button(label="1", style=discord.ButtonStyle.green, row=2)
     async def song1(self, interaction: discord.Interaction, button: discord.ui.Button):
-        global someone_using
+        global someone_using, current_session
         song, author = self.results[0]
         await interaction.response.defer()
         await self.message.edit(embed=await self.queue_song(1), view=None)
         await asyncio.sleep(3)
         select_and_queue(1)
+        current_session.add_to_queue(song, author, self.ctx.author.display_name)
         logger.info("song " + song + " by " + author + " has been added to the queue.")
         await self.message.edit(content=self.ctx.author.display_name + " reserved: **" + song + "** by **" + author + "**", suppress=True)
         someone_using = False
 
     @button(label="2", style=discord.ButtonStyle.green, row=2)
     async def song2(self, interaction: discord.Interaction, button: discord.ui.Button):
-        global someone_using
+        global someone_using, current_session
         song, author = self.results[1]
         await interaction.response.defer()
         await self.message.edit(embed=await self.queue_song(2), view=None)
         await asyncio.sleep(3)
         select_and_queue(2)
+        current_session.add_to_queue(song, author, self.ctx.author.display_name)
         logger.info("song " + song + " by " + author + " has been added to the queue.")
         await self.message.edit(content=self.ctx.author.display_name + " reserved: **" + song + "** by **" + author + "**", suppress=True)
         someone_using = False
 
     @button(label="3", style=discord.ButtonStyle.green, row=2)
     async def song3(self, interaction: discord.Interaction, button: discord.ui.Button):
-        global someone_using
+        global someone_using, current_session
         song, author = self.results[2]
         await interaction.response.defer()
         await self.message.edit(embed=await self.queue_song(3), view=None)
         await asyncio.sleep(3)
         select_and_queue(3)
+        current_session.add_to_queue(song, author, self.ctx.author.display_name)
         logger.info("song " + song + " by " + author + " has been added to the queue.")
         await self.message.edit(content=self.ctx.author.display_name + " reserved: **" + song + "** by **" + author + "**", suppress=True)
         someone_using = False
 
     @button(label="4", style=discord.ButtonStyle.green, row=2)
     async def song4(self, interaction: discord.Interaction, button: discord.ui.Button):
-        global someone_using
+        global someone_using, current_session
         song, author = self.results[3]
         await interaction.response.defer()
         await self.message.edit(embed=await self.queue_song(4), view=None)
         await asyncio.sleep(3)
         select_and_queue(4)
+        current_session.add_to_queue(song, author, self.ctx.author.display_name)
         logger.info("song " + song + " by " + author + " has been added to the queue.")
         await self.message.edit(content=self.ctx.author.display_name + " reserved: **" + song + "** by **" + author + "**", suppress=True)
         someone_using = False
@@ -397,6 +404,7 @@ class SearchMenu(View):
         await self.message.edit(embed=await self.queue_song(5), view=None)
         await asyncio.sleep(3)
         select_and_queue(5)
+        current_session.add_to_queue(song, author, self.ctx.author.display_name)
         logger.info("song " + song + " by " + author + " has been added to the queue.")
         await self.message.edit(content=self.ctx.author.display_name + " reserved: **" + song + "** by **" + author + "**", suppress=True)
         someone_using = False
@@ -423,6 +431,103 @@ async def s(ctx, keyword):
         num_hits = max(0, len(results))
 
     view = SearchMenu(ctx, keyword, num_hits, results, message)
+    await view.show_results()
+
+SONGS_PER_PAGE = 5
+class QueueMenu(View):
+    global current_session
+    def __init__(self, ctx, message):
+        super().__init__()
+        self.ctx = ctx
+        self.page = 1
+        self.pagemax = (current_session.queue_length() + SONGS_PER_PAGE - 1) // SONGS_PER_PAGE
+        self.message = message
+
+    async def update_results(self):
+
+        updated = False
+
+        if not damvision.playing_song():
+            pass
+        else:
+            while current_session.queue and fuzz.ratio(current_session.queue[0][0], damvision.playing_song()) < 80: #TODO give more datapoints later, like combine author
+                current_session.queue.pop(0)
+            updated = True
+
+
+        start_index = (self.page - 1) * SONGS_PER_PAGE
+        end_index = min(self.page * SONGS_PER_PAGE, current_session.queue_length())
+        
+        embed = discord.Embed(title=f'Queue for {current_session.get_title()}:', color=discord.Color.blue())
+
+        for i in range(start_index, end_index):
+            song, author, user = current_session.queue[i % 5]
+            if i == 0:
+                embed.add_field(name=f'▶️ {song}', value=f'by {author} • Queued by {user}', inline=False)
+            else:
+                embed.add_field(name=str(i + 1) + f'. {song}', value=f'by {author} • Queued by {user}', inline=False)
+        
+        if updated:
+            embed.set_footer(text=f'Page {self.page} of {self.pagemax}', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s')
+        else: 
+            embed.set_footer(text=f'Page {self.page} of {self.pagemax} • May not be up to date.', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s')
+        
+        return embed
+
+    async def show_results(self):
+        if self.message:
+            await self.message.edit(embed=await self.update_results(), view=self)
+        else:
+            self.message = await self.ctx.send(embed=await self.update_results(), view=self)
+            await self.message.delete(delay=30)
+            #TODO add timeout if no interaction
+
+
+    async def interaction_check(self, interaction):
+        return interaction.user == self.ctx.author
+
+    @button(label="Previous Page", style=discord.ButtonStyle.gray, row=1)
+    async def previous_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.page > 1:
+            self.page -= 1
+
+            await interaction.response.defer()
+            embed = discord.Embed(title=f'Loading page {self.page} for {self.keyword}:', color=discord.Color.yellow())
+            start_index = (self.page - 1) * SONGS_PER_PAGE
+            end_index = min(self.page * SONGS_PER_PAGE, self.num_hits)
+            for i in range(start_index, end_index):
+                embed.add_field(name=str(i + 1) + f'. ----', value=f'--', inline=False)
+            embed.set_footer(text=f'Page {self.page} of {self.pagemax}')
+            await self.message.edit(embed=embed, view=self)
+
+            self.num_hits, self.results = scroll_up_update()
+            await self.show_results()
+
+    @button(label="Next Page", style=discord.ButtonStyle.gray, row=1)
+    async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.page < self.pagemax:
+            self.page += 1
+
+            await interaction.response.defer()
+            embed = discord.Embed(title=f'Loading page {self.page} for {self.keyword}:', color=discord.Color.yellow())
+            start_index = (self.page - 1) * SONGS_PER_PAGE
+            end_index = min(self.page * SONGS_PER_PAGE, self.num_hits)
+            for i in range(start_index, end_index):
+                embed.add_field(name=str(i + 1) + f'. ----', value=f'--', inline=False)
+            embed.set_footer(text=f'Page {self.page} of {self.pagemax}')
+            await self.message.edit(embed=embed, view=self)
+
+            await self.show_results()
+
+    @button(label="Close", style=discord.ButtonStyle.red, row=1)
+    async def cancel_search(self, interaction: discord.Interaction, button: discord.ui.Button):
+        damvision.click_button(Button.TOP)
+        await self.message.delete()
+
+# view queue
+@bot.command()
+async def q(ctx):
+    view = QueueMenu(ctx, None)
     await view.show_results()
 
 bot.run(f'{client_id}')

@@ -23,7 +23,11 @@ class Button(Enum):
     SEARCH_SONGNAME = './images/search_songname.png'
     SEARCH_ARTISTNAME = './images/search_artistname.png'
 
+    SEARCH = './images/search.png'
+
     RESERVE = './images/reserve.png'
+
+    MOUSE_RESET = './images/logo.png'
 
 
 
@@ -100,7 +104,7 @@ def extract_hit_list():
             try:
                 name = reader.readtext(name_screenshot, paragraph=True)[-1][-1]
             except IndexError:
-                continue
+                pass
 
         author_screenshot = asarray(pyautogui.screenshot(region=(x+90, y+250 + i * 135, 710, 42)))
         author = pytesseract.image_to_string(author_screenshot, lang='jpn')
@@ -108,7 +112,7 @@ def extract_hit_list():
             try:
                 author = reader.readtext(author_screenshot, paragraph=True)[-1][-1]
             except IndexError:
-                continue
+                pass
 
         results.append((name.replace("\n", ""), author.replace("\n", "")))
 
@@ -136,7 +140,25 @@ def search_loading():
     
     return True if max_val > 0.995 else False
 
-def search_blank():
+# def search_blank():
+
+#     # Take a full screenshot and convert it to grayscale
+#     screenshot = pyautogui.screenshot()
+#     screenshot = np.array(screenshot)
+#     screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2GRAY)
+
+#     # Read the image and convert it to grayscale
+#     template = cv2.imread('./images/search_blank.png', cv2.IMREAD_GRAYSCALE)
+
+#     # Perform matching
+#     result = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
+#     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+
+#     logger.debug("search results blank? detected with confidence " + str(max_val))
+    
+#     return True if max_val > 0.99 else False
+
+def no_results():
 
     # Take a full screenshot and convert it to grayscale
     screenshot = pyautogui.screenshot()
@@ -144,12 +166,59 @@ def search_blank():
     screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2GRAY)
 
     # Read the image and convert it to grayscale
-    template = cv2.imread('./images/search_blank.png', cv2.IMREAD_GRAYSCALE)
+    template = cv2.imread('./images/noresults.png', cv2.IMREAD_GRAYSCALE)
 
     # Perform matching
     result = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
 
-    logger.debug("search results blank? detected with confidence " + str(max_val))
+    logger.debug("no results detected with confidence " + str(max_val))
     
     return True if max_val > 0.99 else False
+
+def on_reserve_page():
+
+    # Take a full screenshot and convert it to grayscale
+    screenshot = pyautogui.screenshot()
+    screenshot = np.array(screenshot)
+    screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2GRAY)
+
+    # Read the image and convert it to grayscale
+    template = cv2.imread('./images/reserve.png', cv2.IMREAD_GRAYSCALE)
+
+    # Perform matching
+    result = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+
+    logger.debug("reserve button detected with confidence " + str(max_val))
+    
+    return True if max_val > 0.995 else False
+
+def playing_song():
+
+    # Take a full screenshot and convert it to grayscale
+    screenshot = pyautogui.screenshot()
+    screenshot = np.array(screenshot)
+    screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2GRAY)
+
+    # Read the image and convert it to grayscale
+    template = cv2.imread('./images/songplaying.png', cv2.IMREAD_GRAYSCALE)
+
+    # Perform matching
+    result = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+
+    logger.debug("playing song? detected with confidence " + str(max_val))
+
+    x, y = max_loc
+
+    name_screenshot = asarray(pyautogui.screenshot(region=(x+90, y, 550, 60)))
+    name = pytesseract.image_to_string(name_screenshot, lang='jpn')
+    if name == '':
+        try:
+            name = reader.readtext(name_screenshot, paragraph=True)[-1][-1]
+        except IndexError:
+            name = None
+            pass
+    
+    return name if max_val > 0.99 else None

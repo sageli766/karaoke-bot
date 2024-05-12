@@ -1,7 +1,7 @@
 import pyautogui
 import time
 import pykakasi
-from damvision import click_button, Button, extract_hit_list, search_loading, search_blank
+from damvision import click_button, Button, extract_hit_list, search_loading, no_results, on_reserve_page
 from loguru import logger
 import pyperclip
 
@@ -103,26 +103,15 @@ def search_keyword(keyword, **kwargs):
     pyautogui.keyDown('v')
     pyautogui.keyUp('v')
     pyautogui.keyUp('ctrlleft')
-    parse_instructions([('enter', 0), 
-                        ('d', 0), 
-                        ('d', 0), 
-                        ('r', 0), 
-                        ('r', 0), 
-                        ])
     
-    for _ in range(100):
-        if search_blank():
-            continue
-        else:
-            break
-
-    if search_blank():
+    click_button(Button.SEARCH)
+    click_button(Button.MOUSE_RESET)
+    
+    while search_loading(): time.sleep(0.5)
+    if no_results(): 
+        parse_instructions([('enter', 0.5)])
         click_button(Button.TOP)
         return None, None
-    
-    parse_instructions([('r', 0), ('enter', 0)])
-    while search_loading():
-        time.sleep(0.5)
     return extract_hit_list()
 
 def scroll_down_update(**kwargs):
@@ -145,7 +134,7 @@ def scroll_down_update(**kwargs):
                         ('u', 0), 
                         ('u', 0), 
                         ('u', 0), 
-                        ]) #TODO find a way to not get messed up by loading buffer around 30 results in
+                        ]) #TODO find a way to not get messed up by loading buffer around 30 results in using cv2
     return extract_hit_list()
 
 def scroll_up_update(**kwargs):
@@ -173,10 +162,11 @@ def select_and_queue(number, **kwargs):
     for _ in range(number):
         parse_instructions([('d', 0)])
 
-    parse_instructions([
-                        ('enter', 3),
-                        ('enter', 2)
-                        ])
+    parse_instructions([('enter', 0)])
+    while not on_reserve_page():
+        time.sleep(0.5)
+    parse_instructions([('enter', 0), ('enter', 0)])
+    time.sleep(1)
     click_button(Button.TOP)
 
 def cancel():
