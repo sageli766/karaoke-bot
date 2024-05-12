@@ -1,6 +1,8 @@
 import pyautogui
 import time
 import pykakasi
+from damvision import click_button, Button, extract_hit_list
+from loguru import logger
 
 def to_romaji(song: str) -> str:
     kks = pykakasi.kakasi()
@@ -46,11 +48,7 @@ def parse_instructions(instructions):
 def queue(song, key, **kwargs):
     if kwargs:
         time.sleep(kwargs['delay'])
-    pyautogui.moveTo(1500, 200, duration=0.5)
-    pyautogui.mouseDown()
-    pyautogui.mouseUp()
-    pyautogui.mouseDown()
-    pyautogui.mouseUp()
+    click_button(Button.SEARCH_KEYWORD)
     time.sleep(0.5)
     parse_instructions([('enter', 0.2)])
     pyautogui.typewrite(song)
@@ -89,6 +87,81 @@ def queue(song, key, **kwargs):
     pyautogui.mouseDown()
     time.sleep(0.2)
     pyautogui.mouseUp()
+
+def search_keyword(keyword, **kwargs):
+
+    logger.info("performing keyword search for: " + keyword)
+
+    keyword = to_romaji(keyword)
+    if kwargs:
+        time.sleep(kwargs['delay'])
+    click_button(Button.SEARCH_KEYWORD)
+    time.sleep(0.1)
+    pyautogui.typewrite(keyword)
+    parse_instructions([('enter', 0.2), 
+                        ('enter', 0.2), 
+                        ('pass', 1),
+                        ('d', 0), 
+                        ('d', 0), 
+                        ('r', 0), 
+                        ('r', 0), 
+                        ('r', 0),
+                        ('enter', 2)
+                        ])
+    return extract_hit_list()
+
+def scroll_down_update(**kwargs):
+
+    logger.info("scrolling down and updating hit list.")
+
+    if kwargs:
+        time.sleep(kwargs['delay'])
+    parse_instructions([
+                        ('d', 0), 
+                        ('d', 0), 
+                        ('d', 0), 
+                        ('d', 0), 
+                        ('d', 0), 
+                        ('d', 0), 
+                        ('d', 0), 
+                        ('d', 0), 
+                        ('d', 0),
+                        ('u', 0), 
+                        ('u', 0), 
+                        ('u', 0), 
+                        ('u', 0), 
+                        ]) #TODO find a way to not get messed up by loading buffer around 30 results in
+    return extract_hit_list()
+
+def scroll_up_update(**kwargs):
+
+    logger.info("scrolling up and updating hit list.")
+
+    if kwargs:
+        time.sleep(kwargs['delay'])
+    parse_instructions([
+                        ('u', 0), 
+                        ('u', 0), 
+                        ('u', 0), 
+                        ('u', 0), 
+                        ('u', 0)
+                        ])
+    return extract_hit_list()
+
+def select_and_queue(number, **kwargs):
+
+    number -= 1
+
+    if kwargs:
+        time.sleep(kwargs['delay'])
+
+    for _ in range(number):
+        parse_instructions([('d', 0)])
+
+    parse_instructions([
+                        ('enter', 3),
+                        ('enter', 0)
+                        ])
 
 def cancel():
     pyautogui.moveTo(610, 950, duration=0.5)

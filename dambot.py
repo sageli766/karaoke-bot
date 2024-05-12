@@ -1,5 +1,7 @@
+import asyncio
 import discord
 from discord.ext import commands
+from discord.ui import View, button
 from karaoke import Karaoke
 from damcontrol import *
 import sys
@@ -226,5 +228,128 @@ async def controls(ctx):
                 keydown()
     except:
         pass
+
+
+SONGS_PER_PAGE = 5
+class SearchMenu(View):
+    def __init__(self, ctx, keyword, num_hits, results, message):
+        super().__init__()
+        self.ctx = ctx
+        self.keyword = keyword
+        self.num_hits = num_hits
+        self.results = results
+        self.page = 1
+        self.pagemax = (num_hits + SONGS_PER_PAGE - 1) // SONGS_PER_PAGE
+        self.message = message
+
+    async def update_results(self):
+        start_index = (self.page - 1) * SONGS_PER_PAGE
+        end_index = min(self.page * SONGS_PER_PAGE, self.num_hits)
+        
+        embed = discord.Embed(title=f'Search Results for {self.keyword}:', color=discord.Color.blue())
+
+        for i in range(start_index, end_index):
+            song, author = self.results[i % 5]
+            embed.add_field(name=str(i + 1) + f'. {song}', value=f'{author}', inline=False)
+
+        embed.set_footer(text=f'Page {self.page} of {self.pagemax}')
+
+        # for item in self.children:
+        #     if isinstance(item, discord.ui.Button) and item.custom_id.startswith("song_"):
+        #         self.remove_item(item)
+
+        # for i in range(start_index, end_index):
+        #     button_label = str(i + 1)
+        #     self.add_item(discord.ui.Button(label=button_label, style=discord.ButtonStyle.green, custom_id=f"song_{i+1}", row=2))
+        
+        return embed
+
+    async def show_results(self):
+            await self.message.edit(content='', embed=await self.update_results(), view=self)
+
+    async def interaction_check(self, interaction):
+        return interaction.user == self.ctx.author
+
+    @button(label="Previous Page", style=discord.ButtonStyle.gray, row=1)
+    async def previous_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.page > 1:
+            self.page -= 1
+
+            await interaction.response.defer()
+            embed = discord.Embed(title=f'Loading page {self.page} for {self.keyword}:', color=discord.Color.yellow())
+            start_index = (self.page - 1) * SONGS_PER_PAGE
+            end_index = min(self.page * SONGS_PER_PAGE, self.num_hits)
+            for i in range(start_index, end_index):
+                embed.add_field(name=str(i + 1) + f'. ----', value=f'--', inline=False)
+            embed.set_footer(text=f'Page {self.page} of {self.pagemax}')
+            await self.message.edit(embed=embed, view=self)
+
+            self.num_hits, self.results = scroll_up_update()
+            await self.show_results()
+
+    @button(label="Next Page", style=discord.ButtonStyle.gray, row=1)
+    async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.page < self.pagemax:
+            self.page += 1
+
+            await interaction.response.defer()
+            embed = discord.Embed(title=f'Loading page {self.page} for {self.keyword}:', color=discord.Color.yellow())
+            start_index = (self.page - 1) * SONGS_PER_PAGE
+            end_index = min(self.page * SONGS_PER_PAGE, self.num_hits)
+            for i in range(start_index, end_index):
+                embed.add_field(name=str(i + 1) + f'. ----', value=f'--', inline=False)
+            embed.set_footer(text=f'Page {self.page} of {self.pagemax}')
+            await self.message.edit(embed=embed, view=self)
+
+            self.num_hits, self.results = scroll_down_update()
+            await self.show_results()
+
+    @button(label="1", style=discord.ButtonStyle.green, row=2)
+    async def song1(self, interaction: discord.Interaction, button: discord.ui.Button):
+        song, author = self.results[0]
+        await self.message.edit(content="**" + song + "** has been added to the queue!", suppress=True, view=None)
+        select_and_queue(1)
+        logger.info("song " + song + " by " + author + " has been added to the queue.")
+
+
+    @button(label="2", style=discord.ButtonStyle.green, row=2)
+    async def song2(self, interaction: discord.Interaction, button: discord.ui.Button):
+        song, author = self.results[1]
+        await self.message.edit(content="**" + song + "** has been added to the queue!", suppress=True, view=None)
+        select_and_queue(2)
+        logger.info("song " + song + " by " + author + " has been added to the queue.")
+
+    @button(label="3", style=discord.ButtonStyle.green, row=2)
+    async def song3(self, interaction: discord.Interaction, button: discord.ui.Button):
+        song, author = self.results[2]
+        await self.message.edit(content="**" + song + "** has been added to the queue!", suppress=True, view=None)
+        select_and_queue(3)
+        logger.info("song " + song + " by " + author + " has been added to the queue.")
+
+    @button(label="4", style=discord.ButtonStyle.green, row=2)
+    async def song4(self, interaction: discord.Interaction, button: discord.ui.Button):
+        song, author = self.results[3]
+        await self.message.edit(content="**" + song + "** has been added to the queue!", suppress=True, view=None)
+        select_and_queue(4)
+        logger.info("song " + song + " by " + author + " has been added to the queue.")
+
+    @button(label="5", style=discord.ButtonStyle.green, row=2)
+    async def song5(self, interaction: discord.Interaction, button: discord.ui.Button):
+        song, author = self.results[4]
+        await self.message.edit(content="**" + song + "** has been added to the queue!", suppress=True, view=None)
+        select_and_queue(5)
+        logger.info("song " + song + " by " + author + " has been added to the queue.")
+
+
+# search songs
+@bot.command()
+async def s(ctx, keyword):
+    message = await ctx.send('Searching...')
+    num_hits, results = search_keyword(keyword)
+    if num_hits == -1:
+        num_hits = max(0, len(results))
+
+    view = SearchMenu(ctx, keyword, num_hits, results, message)
+    await view.show_results()
 
 bot.run(f'{client_id}')
