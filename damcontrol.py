@@ -1,8 +1,9 @@
 import pyautogui
 import time
 import pykakasi
-from damvision import click_button, Button, extract_hit_list
+from damvision import click_button, Button, extract_hit_list, search_loading, search_blank
 from loguru import logger
+import pyperclip
 
 def to_romaji(song: str) -> str:
     kks = pykakasi.kakasi()
@@ -92,22 +93,36 @@ def search_keyword(keyword, **kwargs):
 
     logger.info("performing keyword search for: " + keyword)
 
-    keyword = to_romaji(keyword)
+    pyperclip.copy(keyword)
+
     if kwargs:
         time.sleep(kwargs['delay'])
     click_button(Button.SEARCH_KEYWORD)
     time.sleep(0.1)
-    pyautogui.typewrite(keyword)
-    parse_instructions([('enter', 0.2), 
-                        ('enter', 0.2), 
-                        ('pass', 1),
+    pyautogui.keyDown('ctrlleft')
+    pyautogui.keyDown('v')
+    pyautogui.keyUp('v')
+    pyautogui.keyUp('ctrlleft')
+    parse_instructions([('enter', 0), 
                         ('d', 0), 
                         ('d', 0), 
                         ('r', 0), 
                         ('r', 0), 
-                        ('r', 0),
-                        ('enter', 2)
                         ])
+    
+    for _ in range(100):
+        if search_blank():
+            continue
+        else:
+            break
+
+    if search_blank():
+        click_button(Button.TOP)
+        return None, None
+    
+    parse_instructions([('r', 0), ('enter', 0)])
+    while search_loading():
+        time.sleep(0.5)
     return extract_hit_list()
 
 def scroll_down_update(**kwargs):
@@ -160,8 +175,9 @@ def select_and_queue(number, **kwargs):
 
     parse_instructions([
                         ('enter', 3),
-                        ('enter', 0)
+                        ('enter', 2)
                         ])
+    click_button(Button.TOP)
 
 def cancel():
     pyautogui.moveTo(610, 950, duration=0.5)

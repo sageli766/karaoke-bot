@@ -8,6 +8,7 @@ from controlpanel import ControlPanelView
 import asyncio
 import sys
 import pyautogui
+import damvision
 
 client_id = sys.argv[1]
 intents = discord.Intents.default()
@@ -15,6 +16,8 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='$', intents=intents)
 
 current_session = None
+
+someone_using = False
 
 screen_width, screen_height = pyautogui.size()
 
@@ -27,6 +30,13 @@ async def on_ready():
 async def parrot(ctx, *args):
     for arg in args:
         await ctx.send(f'{arg}')
+
+# manual reset command in case something goes poo poo
+@bot.command()
+async def r(ctx, *args):
+    global someone_using
+    click_button(Button.TOP)
+    someone_using = False
 
 @bot.command()
 async def jessie(ctx, name):
@@ -246,9 +256,12 @@ class SearchMenu(View):
         for i in range(start_index, end_index):
             song, author = self.results[i % 5]
             embed.add_field(name=str(i + 1) + f'. {song}', value=f'{author}', inline=False)
+        
+        embed.set_thumbnail(url="https://dan.onl/images/emptysong.jpg")
 
-        embed.set_footer(text=f'Page {self.page} of {self.pagemax}')
+        embed.set_footer(text=f'Page {self.page} of {self.pagemax} • BETA feature. Results may not be accurate.', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s')
 
+        # i hate discord.py i do not know how to make buttons that update with the song numbers
         # for item in self.children:
         #     if isinstance(item, discord.ui.Button) and item.custom_id.startswith("song_"):
         #         self.remove_item(item)
@@ -259,8 +272,29 @@ class SearchMenu(View):
         
         return embed
 
+    async def queue_song(self, number):
+        start_index = (self.page - 1) * SONGS_PER_PAGE
+        end_index = min(self.page * SONGS_PER_PAGE, self.num_hits)
+        
+        embed = discord.Embed(title=f'Search Results for {self.keyword}:', color=discord.Color.yellow())
+
+        for i in range(start_index, end_index):
+            song, author = self.results[i % 5]
+            if i % 5 == number - 1:
+                embed.add_field(name=str(i + 1) + f'. {song} <- Reserving...', value=f'{author}', inline=False)
+            else:
+                embed.add_field(name=str(i + 1) + '. ----', value='--', inline=False)
+        
+        embed.set_thumbnail(url="https://dan.onl/images/emptysong.jpg")
+
+        embed.set_footer(text=f'Page {self.page} of {self.pagemax} • BETA feature. Results may not be accurate.', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s')
+        
+        return embed
+
     async def show_results(self):
             await self.message.edit(content='', embed=await self.update_results(), view=self)
+            #TODO add timeout if no interaction
+
 
     async def interaction_check(self, interaction):
         return interaction.user == self.ctx.author
@@ -299,48 +333,92 @@ class SearchMenu(View):
             self.num_hits, self.results = scroll_down_update()
             await self.show_results()
 
+    @button(label="Cancel Search", style=discord.ButtonStyle.red, row=1)
+    async def cancel_search(self, interaction: discord.Interaction, button: discord.ui.Button):
+        global someone_using
+        damvision.click_button(Button.TOP)
+        someone_using = False
+        await self.message.delete()
+
+    # too lazy to make a function for these lmao
     @button(label="1", style=discord.ButtonStyle.green, row=2)
     async def song1(self, interaction: discord.Interaction, button: discord.ui.Button):
+        global someone_using
         song, author = self.results[0]
-        await self.message.edit(content="**" + song + "** has been added to the queue!", suppress=True, view=None)
+        await interaction.response.defer()
+        await self.message.edit(embed=await self.queue_song(1), view=None)
+        await asyncio.sleep(3)
         select_and_queue(1)
         logger.info("song " + song + " by " + author + " has been added to the queue.")
-
+        await self.message.edit(content=self.ctx.author.display_name + " reserved: **" + song + "** by **" + author + "**", suppress=True)
+        someone_using = False
 
     @button(label="2", style=discord.ButtonStyle.green, row=2)
     async def song2(self, interaction: discord.Interaction, button: discord.ui.Button):
+        global someone_using
         song, author = self.results[1]
-        await self.message.edit(content="**" + song + "** has been added to the queue!", suppress=True, view=None)
+        await interaction.response.defer()
+        await self.message.edit(embed=await self.queue_song(2), view=None)
+        await asyncio.sleep(3)
         select_and_queue(2)
         logger.info("song " + song + " by " + author + " has been added to the queue.")
+        await self.message.edit(content=self.ctx.author.display_name + " reserved: **" + song + "** by **" + author + "**", suppress=True)
+        someone_using = False
 
     @button(label="3", style=discord.ButtonStyle.green, row=2)
     async def song3(self, interaction: discord.Interaction, button: discord.ui.Button):
+        global someone_using
         song, author = self.results[2]
-        await self.message.edit(content="**" + song + "** has been added to the queue!", suppress=True, view=None)
+        await interaction.response.defer()
+        await self.message.edit(embed=await self.queue_song(3), view=None)
+        await asyncio.sleep(3)
         select_and_queue(3)
         logger.info("song " + song + " by " + author + " has been added to the queue.")
+        await self.message.edit(content=self.ctx.author.display_name + " reserved: **" + song + "** by **" + author + "**", suppress=True)
+        someone_using = False
 
     @button(label="4", style=discord.ButtonStyle.green, row=2)
     async def song4(self, interaction: discord.Interaction, button: discord.ui.Button):
+        global someone_using
         song, author = self.results[3]
-        await self.message.edit(content="**" + song + "** has been added to the queue!", suppress=True, view=None)
+        await interaction.response.defer()
+        await self.message.edit(embed=await self.queue_song(4), view=None)
+        await asyncio.sleep(3)
         select_and_queue(4)
         logger.info("song " + song + " by " + author + " has been added to the queue.")
+        await self.message.edit(content=self.ctx.author.display_name + " reserved: **" + song + "** by **" + author + "**", suppress=True)
+        someone_using = False
 
     @button(label="5", style=discord.ButtonStyle.green, row=2)
     async def song5(self, interaction: discord.Interaction, button: discord.ui.Button):
+        global someone_using
         song, author = self.results[4]
-        await self.message.edit(content="**" + song + "** has been added to the queue!", suppress=True, view=None)
+        await interaction.response.defer()
+        await self.message.edit(embed=await self.queue_song(5), view=None)
+        await asyncio.sleep(3)
         select_and_queue(5)
         logger.info("song " + song + " by " + author + " has been added to the queue.")
+        await self.message.edit(content=self.ctx.author.display_name + " reserved: **" + song + "** by **" + author + "**", suppress=True)
+        someone_using = False
 
 
 # search songs
 @bot.command()
 async def s(ctx, keyword):
+    global someone_using
+    if len(keyword) < 2:
+        await ctx.send('Your search cannot be less than 2 characters in length.', delete_after=3)
+        return
+    if someone_using:
+        await ctx.send('Someone else is currently using the search feature. ' +
+                       'If the previous search is not being used, select "Cancel Search" and try again. Override command: $r', delete_after=10)
+        return
+    someone_using = True
     message = await ctx.send('Searching...')
     num_hits, results = search_keyword(keyword)
+    if num_hits == None and results == None:
+        await message.edit(content='No results found.', delete_after=3)
+        return
     if num_hits == -1:
         num_hits = max(0, len(results))
 

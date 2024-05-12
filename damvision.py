@@ -31,10 +31,6 @@ class Button(Enum):
 # @return confidence value. If the button exists, it should be >0.99.
 def click_button(button):
 
-    mod = 0
-
-    if button == Button.SEARCH_KEYWORD or button == Button.SEARCH_SONGNAME or button == Button.SEARCH_ARTISTNAME: mod = -50
-
     image_path = button.value
 
     # Take a full screenshot and convert it to grayscale
@@ -54,13 +50,13 @@ def click_button(button):
 
     if button_pos:
         x, y = button_pos
-        pyautogui.moveTo(x, y + mod)
+        pyautogui.moveTo(x, y)
         pyautogui.mouseDown()
         pyautogui.mouseUp()
         pyautogui.mouseDown()
         pyautogui.mouseUp()
 
-    logger.info("Button " + str(button) + " clicked with confidence " + str(max_val))
+    logger.debug("Button " + str(button) + " clicked with confidence " + str(max_val))
     
     return max_val
 
@@ -87,7 +83,7 @@ def extract_hit_list():
 
     x, y = max_loc
 
-    num_results_screenshot = asarray(pyautogui.screenshot(imageFilename='test.png', region=(x+650, y+70, 70, 40))) #TODO change this for 4 digit numbers
+    num_results_screenshot = asarray(pyautogui.screenshot(region=(x+620, y+70, 100, 40))) #TODO change this for 4 digit numbers
     num_results = pytesseract.image_to_string(num_results_screenshot, lang='eng').replace("\n", "")
     logger.debug("num_results = " + num_results)
     try:
@@ -121,3 +117,39 @@ def extract_hit_list():
     logger.debug("results = " + str(results))
 
     return num_results, results
+
+def search_loading():
+
+    # Take a full screenshot and convert it to grayscale
+    screenshot = pyautogui.screenshot()
+    screenshot = np.array(screenshot)
+    screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2GRAY)
+
+    # Read the image and convert it to grayscale
+    template = cv2.imread('./images/korekana.png', cv2.IMREAD_GRAYSCALE)
+
+    # Perform matching
+    result = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+
+    logger.debug("これかな detected with confidence " + str(max_val))
+    
+    return True if max_val > 0.995 else False
+
+def search_blank():
+
+    # Take a full screenshot and convert it to grayscale
+    screenshot = pyautogui.screenshot()
+    screenshot = np.array(screenshot)
+    screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2GRAY)
+
+    # Read the image and convert it to grayscale
+    template = cv2.imread('./images/search_blank.png', cv2.IMREAD_GRAYSCALE)
+
+    # Perform matching
+    result = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+
+    logger.debug("search results blank? detected with confidence " + str(max_val))
+    
+    return True if max_val > 0.99 else False
