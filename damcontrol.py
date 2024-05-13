@@ -1,18 +1,8 @@
 import pyautogui
 import time
-import pykakasi
 from damvision import click_button, Button, extract_hit_list, search_loading, no_results, on_reserve_page
 from loguru import logger
 import pyperclip
-
-def to_romaji(song: str) -> str:
-    kks = pykakasi.kakasi()
-    raw_input = song
-    result = kks.convert(raw_input)
-    romaji_output = ''
-    for item in result:
-        romaji_output += item['hepburn']
-    return romaji_output
 
 def enter():
     pyautogui.keyDown('enter')

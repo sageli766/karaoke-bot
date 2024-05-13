@@ -5,7 +5,6 @@ from discord.ui import View, button
 from karaoke import Karaoke
 from damcontrol import *
 from controlpanel import ControlPanelView
-import asyncio
 import sys
 import pyautogui
 import damvision
@@ -199,7 +198,7 @@ async def next(ctx):
         await ctx.send(embed=embed)
     elif current_session:
         curr_song, user, key = current_session.queue[0]
-        queue(to_romaji(curr_song), key)
+        #queue(to_romaji(curr_song), key)
         current_session.remove_from_queue(0)
         embed = discord.Embed()
         embed.add_field(name='Success', value=f'Queueing {curr_song} requested by {user}.')

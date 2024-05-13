@@ -3,11 +3,11 @@ import pyautogui
 import numpy as np
 from enum import Enum
 from loguru import logger
-import easyocr
+# import easyocr
 import pytesseract
 from numpy import asarray
 
-reader = easyocr.Reader(['ja','en'])
+# reader = easyocr.Reader(['ja','en'])
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe' # you may have to install https://github.com/UB-Mannheim/tesseract/wiki
 
 class Button(Enum):
@@ -88,7 +88,7 @@ def extract_hit_list():
 
     x, y = max_loc
 
-    num_results_screenshot = asarray(pyautogui.screenshot(imageFilename='num.png', region=(x+620, y+70, 100, 40))) #TODO change this for 4 digit numbers
+    num_results_screenshot = asarray(pyautogui.screenshot(imageFilename='num.png', region=(x+435, y+50, 80, 30))) #TODO change this for 4 digit numbers
     num_results = pytesseract.image_to_string(num_results_screenshot, lang='eng').replace("\n", "")
     logger.debug("num_results = " + num_results)
     try:
@@ -96,22 +96,26 @@ def extract_hit_list():
     except ValueError:
         logger.warning("OCR for hit number failed. Defaulting to -1.")
         num_results = -1
+    
 
     for i in range(5):
         
-        name_screenshot = asarray(pyautogui.screenshot(imageFilename='name.png', region=(x+90, y+180 + i * 135, 710, 60)))
+        name_screenshot = asarray(pyautogui.screenshot(imageFilename='name.png', region=(x+65, y+130 + i * 97, 510, 40)))
+        logger.debug("adfsfasdfjhasdkfhlkasdfhlasdkf")
         name = pytesseract.image_to_string(name_screenshot, lang='jpn')
         if name == '':
             try:
-                name = reader.readtext(name_screenshot, paragraph=True)[-1][-1]
+                pass
+                # name = reader.readtext(name_screenshot, paragraph=True)[-1][-1]
             except IndexError:
                 pass
 
-        author_screenshot = asarray(pyautogui.screenshot(imageFilename='author.png', region=(x+90, y+250 + i * 135, 710, 42)))
+        author_screenshot = asarray(pyautogui.screenshot(imageFilename='author.png', region=(x+65, y+180 + i * 97, 510, 27)))
         author = pytesseract.image_to_string(author_screenshot, lang='jpn')
         if author == '':
             try:
-                author = reader.readtext(author_screenshot, paragraph=True)[-1][-1]
+                pass
+                # author = reader.readtext(author_screenshot, paragraph=True)[-1][-1]
             except IndexError:
                 pass
 
@@ -213,11 +217,12 @@ def playing_song():
 
     x, y = max_loc
 
-    name_screenshot = asarray(pyautogui.screenshot(region=(x+90, y, 550, 60)))
+    name_screenshot = asarray(pyautogui.screenshot(imageFilename='fdsfsd.png', region=(x+65, y, 405, 45)))
     name = pytesseract.image_to_string(name_screenshot, lang='jpn')
     if name == '':
         try:
-            name = reader.readtext(name_screenshot, paragraph=True)[-1][-1]
+            pass
+            # name = reader.readtext(name_screenshot, paragraph=True)[-1][-1]
         except IndexError:
             name = None
             pass
