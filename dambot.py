@@ -290,7 +290,7 @@ class SearchMenu(View):
         
         embed.set_thumbnail(url="https://dan.onl/images/emptysong.jpg")
 
-        embed.set_footer(text=f'Page {self.page} of {self.pagemax} • BETA feature. Results may not be accurate.', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s')
+        embed.set_footer(text=f'Page {self.page} of {self.pagemax} • BETA feature. Results may not be accurate.', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQefE5gdPyyrwTpGrMlLVbIsgp5cCDTccBUVtuIR-j0BQ&s')
         
         return embed
 
@@ -468,9 +468,9 @@ class QueueMenu(View):
                 embed.add_field(name=str(i + 1) + f'. {song}', value=f'{author} • Queued by {user}', inline=False)
         
         if updated:
-            embed.set_footer(text=f'Page {self.page} of {self.pagemax}', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s')
+            embed.set_footer(text=f'Page {self.page} of {self.pagemax}', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhAS56v4R95lmRkF0Z9oqZH66WiBT8MSVWibktrMNzqw&s')
         else: 
-            embed.set_footer(text=f'Page {self.page} of {self.pagemax} • May not be up to date.', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s')
+            embed.set_footer(text=f'Page {self.page} of {self.pagemax} • May not be up to date.', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTabSf_3_hGEf6urhOIK38T0P6nj3NrBkyBaba8TmGKXg&s')
         
         return embed
 

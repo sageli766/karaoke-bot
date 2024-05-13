@@ -88,7 +88,7 @@ def extract_hit_list():
 
     x, y = max_loc
 
-    num_results_screenshot = asarray(pyautogui.screenshot(region=(x+620, y+70, 100, 40))) #TODO change this for 4 digit numbers
+    num_results_screenshot = asarray(pyautogui.screenshot(imageFilename='num.png', region=(x+620, y+70, 100, 40))) #TODO change this for 4 digit numbers
     num_results = pytesseract.image_to_string(num_results_screenshot, lang='eng').replace("\n", "")
     logger.debug("num_results = " + num_results)
     try:
@@ -99,7 +99,7 @@ def extract_hit_list():
 
     for i in range(5):
         
-        name_screenshot = asarray(pyautogui.screenshot(region=(x+90, y+180 + i * 135, 710, 60)))
+        name_screenshot = asarray(pyautogui.screenshot(imageFilename='name.png', region=(x+90, y+180 + i * 135, 710, 60)))
         name = pytesseract.image_to_string(name_screenshot, lang='jpn')
         if name == '':
             try:
@@ -107,7 +107,7 @@ def extract_hit_list():
             except IndexError:
                 pass
 
-        author_screenshot = asarray(pyautogui.screenshot(region=(x+90, y+250 + i * 135, 710, 42)))
+        author_screenshot = asarray(pyautogui.screenshot(imageFilename='author.png', region=(x+90, y+250 + i * 135, 710, 42)))
         author = pytesseract.image_to_string(author_screenshot, lang='jpn')
         if author == '':
             try:
