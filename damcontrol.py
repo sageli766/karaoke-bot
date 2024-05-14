@@ -36,48 +36,35 @@ def parse_instructions(instructions):
             pass
         time.sleep(delay)
 
-def queue(song, key, **kwargs):
+def queue(keyword, key, **kwargs):
+    logger.info("attempting to queue first result for: " + keyword)
+
+    pyperclip.copy(keyword)
+
     if kwargs:
         time.sleep(kwargs['delay'])
     click_button(Button.SEARCH_KEYWORD)
-    time.sleep(0.5)
-    parse_instructions([('enter', 0.2)])
-    pyautogui.typewrite(song)
-    time.sleep(1)
-    parse_instructions([('enter', 0.2), 
-                        ('enter', 0.2), 
-                        ('pass', 3),
-                        ('d', 0.1), 
-                        ('d', 0.1), 
-                        ('r', 0.1), 
-                        ('r', 0.1), 
-                        ('r', 2),
-                        ('enter', 2), 
-                        ('enter', 3),
-                        ('u', 0.1),
-                        ('l', 0.1),
-                        ('l', 0.1),
-                        ('enter', 0)
-                        ])
+    time.sleep(0.1)
+    pyautogui.keyDown('ctrlleft')
+    pyautogui.keyDown('v')
+    pyautogui.keyUp('v')
+    pyautogui.keyUp('ctrlleft')
     
-    for _ in range(abs(key)):
-        if key > 0:
-            up()
-        elif key < 0:
-            down()
-        time.sleep(0.2)
+    click_button(Button.SUBMIT_SEARCH)
+    click_button(Button.MOUSE_RESET)
+    
+    while search_loading(): time.sleep(0.5)
+    if no_results(): 
+        parse_instructions([('enter', 0.5)])
+        click_button(Button.TOP)
+        return None, None
 
-    parse_instructions([('enter', 0.1),
-                        ('r', 0.1),
-                        ('r', 0.1),
-                        ('d', 0.2),
-                        ('enter', 0.2)])
-
-    pyautogui.moveTo(610, 760, duration=0.5)
-    time.sleep(2)
-    pyautogui.mouseDown()
-    time.sleep(0.2)
-    pyautogui.mouseUp()
+    parse_instructions([('enter', 0)])
+    while not on_reserve_page():
+        time.sleep(0.5)
+    parse_instructions([('enter', 0), ('enter', 0)])
+    time.sleep(1)
+    click_button(Button.TOP)
 
 def search_keyword(keyword, **kwargs):
 
@@ -94,7 +81,7 @@ def search_keyword(keyword, **kwargs):
     pyautogui.keyUp('v')
     pyautogui.keyUp('ctrlleft')
     
-    click_button(Button.SEARCH)
+    click_button(Button.SUBMIT_SEARCH)
     click_button(Button.MOUSE_RESET)
     
     while search_loading(): time.sleep(0.5)
@@ -155,7 +142,7 @@ def select_and_queue(number, **kwargs):
     parse_instructions([('enter', 0)])
     while not on_reserve_page():
         time.sleep(0.5)
-    parse_instructions([('enter', 0), ('enter', 0)])
+    parse_instructions([('enter', 0)])
     time.sleep(1)
     click_button(Button.TOP)
 

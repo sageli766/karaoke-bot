@@ -425,6 +425,7 @@ async def s(ctx, keyword):
     num_hits, results = search_keyword(keyword)
     if num_hits == None and results == None:
         await message.edit(content='No results found.', delete_after=3)
+        someone_using = False
         return
     if num_hits == -1:
         num_hits = max(0, len(results))
@@ -560,7 +561,7 @@ class ControlMenu(View):
             self.message.delete(delay=5)
             click_button(Button.SKIP)
             time.sleep(5)
-            damvision.click_button(Button.RESTART_YES)
+            damvision.click_button(Button.RESTART_CONFIRM)
         else:
             self.message.edit(content="Error: different song. Retry $c", view=None)
 
