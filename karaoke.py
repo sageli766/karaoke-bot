@@ -1,5 +1,3 @@
-import discord
-
 class Karaoke():
     queue = []
     title = ''
