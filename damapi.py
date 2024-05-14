@@ -1,4 +1,4 @@
-import requests
+import aiohttp
 from loguru import logger
 import os
 from dotenv import load_dotenv
@@ -11,7 +11,7 @@ USERCODE = os.getenv('USERCODE')
 AUTHKEY = os.getenv('AUTHKEY')
 AUTHTOKEN = os.getenv('AUTHTOKEN')
 
-def get_song_info(response_json):
+async def get_song_info(response_json):
     songs = response_json.get('list', [])
     song_info_list = []
     for song in songs:
@@ -48,7 +48,7 @@ def get_song_info(response_json):
 #     'thumbnailType': 1
 # }
 
-def search_by_keyword(keyword, disp_count, page_no):
+async def search_by_keyword(keyword, disp_count, page_no):
     url = SEARCH_KEYWORD_URL
     headers = {
         'Content-Type': 'application/json;charset=UTF-8',
@@ -56,7 +56,6 @@ def search_by_keyword(keyword, disp_count, page_no):
     }
     data = {
         'authKey': AUTHKEY,
-        # 'authToken': AUTHTOKEN,
         'compId': "1",
         'dispCount': disp_count,
         'keyword': keyword,
@@ -66,12 +65,11 @@ def search_by_keyword(keyword, disp_count, page_no):
         'pageNo': page_no,
         'shopType': "02",
         'sort': "2",
-        # 'userCode': USERCODE
     }
 
-    response = requests.post(url, json=data, headers=headers)
-
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print("Error:", response.status_code)
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, json=data, headers=headers) as response:
+            if response.status == 200:
+                return await response.json()
+            else:
+                logger.error("Error: %d", response.status)

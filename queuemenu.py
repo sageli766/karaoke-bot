@@ -1,29 +1,26 @@
 import discord
 from discord.ui import View, button
-from fuzzywuzzy import fuzz
 
-import damvision
 from damcontrol import *
-import session
+from karaoke import get_current_session
 
 SONGS_PER_PAGE = 5
 class QueueMenu(View):
-    def __init__(self, ctx, message):
+    def __init__(self, ctx):
         super().__init__()
         self.ctx = ctx
         self.page = 1
-        self.pagemax = (session.get_current_session().queue_length() + SONGS_PER_PAGE - 1) // SONGS_PER_PAGE
-        self.message = message
+        self.pagemax = (get_current_session().queue_length() + SONGS_PER_PAGE - 1) // SONGS_PER_PAGE
 
     async def update_results(self):
 
         start_index = (self.page - 1) * SONGS_PER_PAGE
-        end_index = min(self.page * SONGS_PER_PAGE, session.get_current_session().queue_length())
+        end_index = min(self.page * SONGS_PER_PAGE, get_current_session().queue_length())
         
-        embed = discord.Embed(title=f'Queue for {session.get_current_session().get_title()}:', color=discord.Color.blue())
+        embed = discord.Embed(title=f'Queue for {get_current_session().get_title()}:', color=discord.Color.blue())
 
         for i in range(start_index, end_index):
-            song, author, user = session.get_current_session().queue[i % 5]
+            song, author, user = get_current_session().queue[i % 5]
             if i == 0:
                 embed.add_field(name=f'▶️ {song}', value=f'{author} • Queued by {user}', inline=False)
             else:
@@ -51,17 +48,20 @@ class QueueMenu(View):
         if self.page > 1:
             self.page -= 1
 
-            await interaction.response.defer()
-            embed = discord.Embed(title=f'Loading page {self.page} for {self.keyword}:', color=discord.Color.yellow())
-            start_index = (self.page - 1) * SONGS_PER_PAGE
-            end_index = min(self.page * SONGS_PER_PAGE, self.num_hits)
-            for i in range(start_index, end_index):
-                embed.add_field(name=str(i + 1) + f'. ----', value=f'--', inline=False)
-            embed.set_footer(text=f'Page {self.page} of {self.pagemax}')
-            await self.message.edit(embed=embed, view=self)
-
-            self.num_hits, self.results = scroll_up_update()
-            await self.show_results()
+            if self.page < self.results['pageCount']:
+                self.page += 1
+    
+                await interaction.response.defer()
+                embed = discord.Embed(title=f'Loading page {self.page} for {self.keyword}:', color=discord.Color.yellow())
+                start_index = (self.page - 1) * SONGS_PER_PAGE
+                end_index = min(self.page * SONGS_PER_PAGE, self.results['totalCount'])
+                for i in range(start_index, end_index):
+                    embed.add_field(name=str(i + 1) + f'. ----', value=f'--', inline=False)
+                embed.set_footer(text=f'Page {self.page} of ' + str(self.results['pageCount']))
+                await self.message.edit(embed=embed, view=self)
+        
+                await self.show_results()
+            else: await interaction.response.defer()
 
     @button(label="Next Page", style=discord.ButtonStyle.gray, row=1)
     async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -81,5 +81,5 @@ class QueueMenu(View):
 
     @button(label="Close", style=discord.ButtonStyle.red, row=1)
     async def cancel_search(self, interaction: discord.Interaction, button: discord.ui.Button):
-        damvision.click_button(Button.TOP)
+        click_button(Button.TOP)
         await self.message.delete()

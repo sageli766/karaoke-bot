@@ -21,6 +21,9 @@ class Karaoke():
     def remove_from_queue(self, pos=0):
         self.now_playing = self.queue.pop(pos)
         return self.now_playing
+    
+    def clear(self):
+        self.queue.clear()
 
     def remove_first_n_from_queue(self, n):
         if n <= 0:
@@ -30,3 +33,27 @@ class Karaoke():
             self.queue = []
         else:
             self.queue = self.queue[n:]
+
+# Singleton for Karaoke session
+class SessionManager:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.current_session = None
+        return cls._instance
+
+    def get_current_session(self):
+        return self.current_session
+
+    def set_current_session(self, session):
+        self.current_session = session
+
+session_manager = SessionManager()
+
+def get_current_session():
+    return session_manager.get_current_session()
+
+def set_current_session(session):
+    session_manager.set_current_session(session)
