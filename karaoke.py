@@ -1,5 +1,6 @@
 class Karaoke():
     queue = []
+    now_playing = None
     title = ''
 
     def __init__(self, title):
@@ -17,8 +18,9 @@ class Karaoke():
     def add_to_queue(self, song_title, author, user):
         self.queue.append((song_title, author, user))
 
-    def remove_from_queue(self, pos):
-        self.queue.pop(pos)
+    def remove_from_queue(self, pos=0):
+        self.now_playing = self.queue.pop(pos)
+        return self.now_playing
 
     def remove_first_n_from_queue(self, n):
         if n <= 0:

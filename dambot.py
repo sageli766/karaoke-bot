@@ -1,26 +1,31 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import sys
 import pyautogui
-import damvision
+import asyncio
 
+import damvision
+import damapi
 from karaoke import Karaoke
 from damcontrol import *
 import session
+import scaling
 
 from searchmenu import SearchMenu
 from controlmenu import ControlMenu
 from queuemenu import QueueMenu
 
+
 client_id = sys.argv[1]
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix='$', intents=intents)
+bot = commands.Bot(command_prefix='', intents=intents)
 
-screen_width, screen_height = pyautogui.size()
+# TODO restart logic, top chart, bad mic dialogue
 
 @bot.event
 async def on_ready():
+    task_loop.start()
     print(f'Logged in as {bot.user}')
 
 # test bot command
@@ -31,10 +36,12 @@ async def parrot(ctx, *args):
 
 # manual reset command in case something goes poo poo
 @bot.command()
-async def r(ctx, *args):
+async def reset(ctx, *args):
     click_button(Button.TOP)
     session.set_someone_using(False)
     await ctx.send(f'reset!')
+    x, y = scaling.scale_xy_offset(193, 1070)
+    pyautogui.moveTo(x, y)
 
 @bot.command()
 async def jessie(ctx, name):
@@ -62,9 +69,9 @@ async def kstart(ctx, *args):
 # ends the current karaoke session
 @bot.command()
 async def kend(ctx):
-    session.set_current_session(None)
     embed=discord.Embed()
-    embed.add_field(name='Success', value=f'Current session **{session.get_current_session().title}** ended.')
+    embed.add_field(name='Success', value=f'Current session **{session.get_current_session().get_title()}** ended.')
+    session.set_current_session(None)
     await ctx.send(embed=embed)
 
 # adds a song to the current karaoke session's queue
@@ -106,25 +113,14 @@ async def clear(ctx):
 
 # search songs
 @bot.command()
-async def s(ctx, keyword):
+async def s(ctx, *, keyword):
     if len(keyword) < 2:
         await ctx.send('Your search cannot be less than 2 characters in length.', delete_after=3)
         return
-    if session.someone_using():
-        await ctx.send('Someone else is currently using the search feature. ' +
-                       'If the previous search is not being used, select "Cancel Search" and try again. Override command: $r', delete_after=10)
-        return
-    session.set_someone_using(True)
     message = await ctx.send('Searching...')
-    num_hits, results = search_keyword(keyword)
-    if num_hits == None and results == None:
-        await message.edit(content='No results found.', delete_after=3)
-        session.set_someone_using(False)
-        return
-    if num_hits == -1:
-        num_hits = max(0, len(results))
+    request = damapi.get_song_info(damapi.search_by_keyword(keyword, 5, 1))
 
-    view = SearchMenu(ctx, keyword, num_hits, results, message)
+    view = SearchMenu(ctx, keyword, request, message)
     await view.show_results()
 
 # view queue
@@ -143,5 +139,42 @@ async def c(ctx):
     view = ControlMenu(ctx, message)
     await message.edit(view=view)
     await message.delete(delay=60)
+
+async def get_pixel_color(x, y):
+    loop = asyncio.get_running_loop()
+    screenshot = await loop.run_in_executor(None, pyautogui.screenshot)
+    pixel = screenshot.getpixel((x, y))
+    return pixel
+
+popped = False
+current_song_playing = False
+@tasks.loop(seconds=10)
+async def task_loop():
+    global popped
+    global current_song_playing
+    
+    x, y = scaling.scale_xy_offset(193, 1070)
+    while True:
+        current_color = await get_pixel_color(x, y)
+        if current_color == (112, 154, 251):
+            if not current_song_playing:
+                current_song_playing = True
+                popped = False
+                logger.debug("color is blue!")
+        elif current_color == (2, 3, 5) and current_song_playing:
+            current_song_playing = False
+            session.get_current_session().remove_from_queue()
+            logger.debug("Song is still playing, color is not blue")
+        elif current_color == (2, 3, 5):
+            if session.get_current_session():
+                if session.get_current_session().queue_length() > 0:
+                    if not popped:
+                        popped = True
+                        song = session.get_current_session().get_current_song()
+                        search_keyword_and_reserve(song[0] + " " + song[1])
+            logger.debug("color is not blue, song is not playing")
+            
+        await asyncio.sleep(5)
+
 
 bot.run(f'{client_id}')

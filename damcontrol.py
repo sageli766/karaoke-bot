@@ -36,36 +36,6 @@ def parse_instructions(instructions):
             pass
         time.sleep(delay)
 
-def queue(keyword, key, **kwargs):
-    logger.info("attempting to queue first result for: " + keyword)
-
-    pyperclip.copy(keyword)
-
-    if kwargs:
-        time.sleep(kwargs['delay'])
-    click_button(Button.SEARCH_KEYWORD)
-    time.sleep(0.1)
-    pyautogui.keyDown('ctrlleft')
-    pyautogui.keyDown('v')
-    pyautogui.keyUp('v')
-    pyautogui.keyUp('ctrlleft')
-    
-    click_button(Button.SUBMIT_SEARCH)
-    click_button(Button.MOUSE_RESET)
-    
-    while search_loading(): time.sleep(0.5)
-    if no_results(): 
-        parse_instructions([('enter', 0.5)])
-        click_button(Button.TOP)
-        return None, None
-
-    parse_instructions([('enter', 0)])
-    while not on_reserve_page():
-        time.sleep(0.5)
-    parse_instructions([('enter', 0), ('enter', 0)])
-    time.sleep(1)
-    click_button(Button.TOP)
-
 def search_keyword(keyword, **kwargs):
 
     logger.info("performing keyword search for: " + keyword)
@@ -90,6 +60,31 @@ def search_keyword(keyword, **kwargs):
         click_button(Button.TOP)
         return None, None
     return extract_hit_list()
+
+def search_keyword_and_reserve(keyword):
+
+    logger.info("reserving first keyword search result for: " + keyword)
+
+    pyperclip.copy(keyword)
+
+    click_button(Button.SEARCH_KEYWORD)
+    time.sleep(0.1)
+    pyautogui.keyDown('ctrlleft')
+    pyautogui.keyDown('v')
+    pyautogui.keyUp('v')
+    pyautogui.keyUp('ctrlleft')
+    
+    click_button(Button.SUBMIT_SEARCH)
+    click_button(Button.MOUSE_RESET)
+    
+    while search_loading(): time.sleep(0.5)
+    
+    parse_instructions([('enter', 0), ('enter', 0)])
+    while not on_reserve_page():
+        time.sleep(0.5)
+    parse_instructions([('enter', 0)])
+    time.sleep(1)
+    click_button(Button.TOP)
 
 def scroll_down_update(**kwargs):
 
@@ -128,50 +123,3 @@ def scroll_up_update(**kwargs):
                         ('u', 0)
                         ])
     return extract_hit_list()
-
-def select_and_queue(number, **kwargs):
-
-    number -= 1
-
-    if kwargs:
-        time.sleep(kwargs['delay'])
-
-    for _ in range(number):
-        parse_instructions([('d', 0)])
-
-    parse_instructions([('enter', 0)])
-    while not on_reserve_page():
-        time.sleep(0.5)
-    parse_instructions([('enter', 0)])
-    time.sleep(1)
-    click_button(Button.TOP)
-
-def cancel():
-    pyautogui.moveTo(610, 950, duration=0.5)
-    pyautogui.mouseDown()
-    time.sleep(0.2)
-    pyautogui.mouseUp()
-
-def pause():
-    pyautogui.moveTo(750, 950, duration=0.5)
-    pyautogui.mouseDown()
-    time.sleep(0.2)
-    pyautogui.mouseUp()
-
-def restart():
-    pyautogui.moveTo(900, 950, duration=0.5)
-    pyautogui.mouseDown()
-    time.sleep(0.2)
-    pyautogui.mouseUp()
-
-def keyup():
-    pyautogui.moveTo(1030, 950, duration=0.5)
-    pyautogui.mouseDown()
-    time.sleep(0.2)
-    pyautogui.mouseUp()
-
-def keydown():
-    pyautogui.moveTo(1160, 950, duration=0.5)
-    pyautogui.mouseDown()
-    time.sleep(0.2)
-    pyautogui.mouseUp()

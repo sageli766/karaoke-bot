@@ -17,16 +17,6 @@ class QueueMenu(View):
 
     async def update_results(self):
 
-        updated = False
-
-        if not damvision.playing_song():
-            pass
-        else:
-            while session.get_current_session().queue and fuzz.ratio(session.get_current_session().queue[0][0], damvision.playing_song()) < 80: #TODO give more datapoints later, like combine author
-                session.get_current_session().queue.pop(0)
-            updated = True
-
-
         start_index = (self.page - 1) * SONGS_PER_PAGE
         end_index = min(self.page * SONGS_PER_PAGE, session.get_current_session().queue_length())
         
@@ -39,10 +29,9 @@ class QueueMenu(View):
             else:
                 embed.add_field(name=str(i + 1) + f'. {song}', value=f'{author} • Queued by {user}', inline=False)
         
-        if updated:
-            embed.set_footer(text=f'Page {self.page} of {self.pagemax}', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhAS56v4R95lmRkF0Z9oqZH66WiBT8MSVWibktrMNzqw&s')
-        else: 
-            embed.set_footer(text=f'Page {self.page} of {self.pagemax} • May not be up to date.', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTabSf_3_hGEf6urhOIK38T0P6nj3NrBkyBaba8TmGKXg&s')
+
+        embed.set_footer(text=f'Page {self.page} of {self.pagemax}', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhAS56v4R95lmRkF0Z9oqZH66WiBT8MSVWibktrMNzqw&s')
+
         
         return embed
 
@@ -52,7 +41,6 @@ class QueueMenu(View):
         else:
             self.message = await self.ctx.send(embed=await self.update_results(), view=self)
             await self.message.delete(delay=30)
-            #TODO add timeout if no interaction
 
 
     async def interaction_check(self, interaction):
