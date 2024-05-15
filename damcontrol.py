@@ -8,29 +8,31 @@ from enum import Enum
 import scaling
 
 class Button(Enum):
-    SKIP = 730, 1200
-    PAUSE = 890, 1200 # gotta figure out how this button actually works in the app, appears greyed out all the time
-    RESTART = 1050, 1200
-    RESTART_CONFIRM = 800, 770
-    KEYDOWN = 1210, 1200
-    KEYUP = 1370, 1200
-    BACK = 1530, 1200
-    TOP = 1690, 1200
-    FULLSCREEN = 1950, 1200
+    SKIP = 539, 866
+    PAUSE = 657, 864 # gotta figure out how this button actually works in the app, appears greyed out all the time
+    RESTART = 771, 863
+    RESTART_CONFIRM = 584, 553
+    KEYDOWN = 895, 861
+    KEYUP = 1008, 865
+    BACK = 1124, 860
+    TOP = 1238, 864
+    FULLSCREEN = 1353, 859
 
-    SEARCH_KEYWORD = 1370, 350
-    SEARCH_SONGNAME = 1630, 350
-    SEARCH_ARTISTNAME = 1890, 350
-    SEARCH_NEWSONGS = 1370, 620
-    SEARCH_TOPCHART = 1630, 620
+    SEARCH_KEYWORD = 980, 256
+    SEARCH_SONGNAME = 1172, 255
+    SEARCH_ARTISTNAME = 1354, 254
+    # SEARCH_NEWSONGS = 1370, 620
+    # SEARCH_TOPCHART = 1630, 620
 
-    SUBMIT_SEARCH = 1530, 1060
+    SUBMIT_SEARCH = 1092, 764
 
-    RESERVE = 2000, 1050
+    RESERVE = 1440, 750
 
-    MOUSE_RESET = 100, 100
+    MOUSE_RESET = 72, 52
 
-    GRADING_START = 765, 950
+    GRADING_START = 547, 681
+
+    KEY_CHANGE = 1009, 631
 
 
 def click_button(button):
@@ -76,7 +78,7 @@ def parse_instructions(instructions):
             pass
         time.sleep(delay)
 
-async def search_keyword_and_reserve(keyword):
+async def search_keyword_and_reserve(keyword, key):
     logger.info("reserving first keyword search result for: " + keyword)
 
     pyperclip.copy(keyword)
@@ -97,6 +99,21 @@ async def search_keyword_and_reserve(keyword):
     parse_instructions([('enter', 0), ('enter', 0)])
     while not on_reserve_page():
         await asyncio.sleep(0.5)
-    parse_instructions([('enter', 0)])
+    await change_key(key)
+    click_button(Button.RESERVE)
     await asyncio.sleep(1.5)
     click_button(Button.TOP)
+
+async def change_key(key):
+    direction = key[0]
+    amount = int(key[1])
+    if amount == 0: return
+    logger.info("changing key by: " + key)
+
+    click_button(Button.KEY_CHANGE)
+    for _ in range(amount):
+        if direction == "+":
+            up()
+        else: 
+            down()
+    parse_instructions([('enter', 0)])

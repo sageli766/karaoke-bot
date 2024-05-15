@@ -15,8 +15,8 @@ class Karaoke():
     def get_current_song(self):
         return self.queue[0]
     
-    def add_to_queue(self, song_title, author, user):
-        self.queue.append((song_title, author, user))
+    def add_to_queue(self, song_title, author, key, user):
+        self.queue.append((song_title, author, key, user))
 
     def remove_from_queue(self, pos=0):
         self.now_playing = self.queue.pop(pos)

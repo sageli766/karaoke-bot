@@ -17,7 +17,12 @@ async def get_song_info(response_json):
     for song in songs:
         title = song.get('title', '')
         artist = song.get('artist', '')
-        song_info_list.append((title, artist))
+        releaseDate = song.get('releaseDate', '')
+        highlightLyrics = song.get('highlightLyrics', '')
+        playbackTime = song.get('playbackTime', '')
+        guideVocalFlag = song.get('guideVocalFlag', '')
+        scoreFlag = song.get('scoreFlag', '')
+        song_info_list.append((title, artist, releaseDate, highlightLyrics, playbackTime, guideVocalFlag, scoreFlag))
     
     logger.debug(song_info_list)
 
@@ -28,25 +33,35 @@ async def get_song_info(response_json):
         'totalCount': response_json.get('data', {}).get('totalCount', 0)
     }
 
-# url = TOP_CHART_URL
-# headers = {
-#     'Content-Type': 'application/json; charset=UTF-8',
-#     'format': 'json'
-# }
-# data = {
-#     'compId': 1,
-#     'userCode': USERCODE,
-#     'authToken': AUTHTOKEN,
-#     'compAuthKey': AUTHKEY,
-#     'dispNumber': 30,
-#     'pageNo': 1,
-#     'targetContractId': 1,
-#     'musicViewsRankingId': 2585,
-#     'serviceId': 1,
-#     'deviceId': 141,
-#     'getCount': 200,
-#     'thumbnailType': 1
-# }
+# This api doesn't work for some reason
+# async def get_top_chart(disp_count, page_no):
+#     url = TOP_CHART_URL
+#     headers = {
+#         'Content-Type': 'application/json; charset=UTF-8',
+#         'format': 'json'
+#     }
+#     data = {
+#         'compId': 1,
+#         'userCode': USERCODE,
+#         'authToken': AUTHTOKEN,
+#         'compAuthKey': AUTHKEY,
+#         'dispNumber': disp_count,
+#         'pageNo': page_no,
+#         'targetContractId': 1,
+#         'musicViewsRankingId': 2585,
+#         'serviceId': 1,
+#         'deviceId': 141,
+#         'getCount': 200,
+#         'thumbnailType': 1
+#     }
+
+#     async with aiohttp.ClientSession() as session:
+#         async with session.post(url, json=data, headers=headers) as response:
+#             if response.status == 200:
+#                 return await response.json()
+#             else:
+#                 logger.error("Error: %d", response.status)
+
 
 async def search_by_keyword(keyword, disp_count, page_no):
     url = SEARCH_KEYWORD_URL

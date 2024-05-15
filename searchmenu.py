@@ -4,6 +4,7 @@ from discord.ui import View, button
 import damapi
 from damcontrol import *
 from karaoke import get_current_session
+from reservemenu import ReserveMenu
 
 SONGS_PER_PAGE = 5
 class SearchMenu(View):
@@ -22,7 +23,7 @@ class SearchMenu(View):
         embed = discord.Embed(title=f'Search Results for {self.keyword}:', color=discord.Color.blue())
 
         for i in range(start_index, end_index):
-            song, author = self.results['songs'][i % SONGS_PER_PAGE]
+            song, author, *_ = self.results['songs'][i % SONGS_PER_PAGE]
             index = start_index + i % SONGS_PER_PAGE + 1
             embed.add_field(name=f"{index}. {song}", value=f'by {author}', inline=False)
         
@@ -41,28 +42,24 @@ class SearchMenu(View):
         return interaction.user == self.ctx.author
     
     class add_number_button(discord.ui.Button):  # Button class
-        def __init__(self, label, song, author, ctx):
+        def __init__(self, label, song_info, ctx, prev_view):
             super().__init__(label=label)  # set label and super init class
-            self.song = song
-            self.author = author
+            self.song_info = song_info
             self.ctx = ctx
+            self.prev_view = prev_view
 
         async def callback(self, interaction: discord.Interaction):
-            self.disabled = True
-            await interaction.message.edit(view=self.view)  # update message
+            view = ReserveMenu(self.ctx, self.song_info, self.prev_view)
+            embed = await view.create_embed()
+            await interaction.message.edit(embed=embed, view=view)  # update message
             await interaction.response.defer()
-            get_current_session().add_to_queue(self.song, self.author, self.ctx.author.display_name)
-            logger.info(f"Song {self.song} by {self.author} has been added to the queue.")
-            await self.message.delete()
-            await self.ctx.send(content=f"{self.ctx.author.display_name} reserved: **{self.song}** by **{self.author}**")
 
     async def update_buttons(self):
         start_index = (self.page - 1) * SONGS_PER_PAGE
         await self.delete_buttons(start_index)
         logger.debug(str(start_index) + " " + str(min(start_index + SONGS_PER_PAGE, self.results['totalCount'])))
         for i in range(start_index, min(start_index + SONGS_PER_PAGE, self.results['totalCount'])):
-            song, author = self.results['songs'][i % 5]
-            self.add_item(self.add_number_button(i+1, song, author, self.ctx))
+            self.add_item(self.add_number_button(i+1, self.results['songs'][i % 5], self.ctx, self))
     
     async def delete_buttons(self, from_index):
 
@@ -70,7 +67,9 @@ class SearchMenu(View):
 
         for button in buttons:
             if isinstance(button.label, int):
+                logger.debug("button has int: " + str(button))
                 if button.label <= from_index or button.label > from_index + 5:
+                    logger.debug("removing " + str(button))
                     self.remove_item(button)
 
     @button(emoji="⬅️", style=discord.ButtonStyle.gray, row=2, disabled=True)
@@ -78,30 +77,29 @@ class SearchMenu(View):
         logger.debug(self.page)
         if self.page > 1:
             self.page -= 1
-            await interaction.response.defer()
             for button1 in self.children:
                 if button1.emoji and button1.emoji.name == '➡️':
                     button1.disabled = False
             if self.page == 1:
                 logger.debug("disabled button")
                 button.disabled = True
-            await self.update_page()
+            await self.update_page(interaction)
 
 
     @button(emoji="➡️", style=discord.ButtonStyle.gray, row=2)
     async def next_page(self, button, interaction):
         if self.page < self.results['pageCount']:
             self.page += 1
-            await interaction.response.defer()
             for button1 in self.children:
                 if button1.emoji and button1.emoji.name == '⬅️':
                     button1.disabled = False
             if self.page == self.results['pageCount']:
                 button.disabled = True
-            await self.update_page() #TODO gray out if no results
+            await self.update_page(interaction) #TODO gray out if no results
 
-    async def update_page(self):
+    async def update_page(self, interaction):
         await self.show_loading_page()
+        await interaction.response.defer()
         self.results = await damapi.get_song_info(await damapi.search_by_keyword(self.keyword, 5, self.page))
         await self.update_buttons()
         await self.show_results()
@@ -113,4 +111,4 @@ class SearchMenu(View):
         for i in range(start_index, end_index):
             embed.add_field(name=str(i + 1) + f'. ----', value=f'--', inline=False)
         embed.set_footer(text=f'Page {self.page} of ' + str(self.results['pageCount']))
-        await self.message.edit(embed=embed, view=self)
+        await self.message.edit(embed=embed, view=None)

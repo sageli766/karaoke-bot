@@ -10,8 +10,10 @@ class QueueMenu(View):
         super().__init__()
         self.ctx = ctx
         self.page = 1
-        self.pagemax = (get_current_session().queue_length() + SONGS_PER_PAGE - 1) // SONGS_PER_PAGE
-
+        if get_current_session().queue_length() % 5 == 0:
+            self.pagemax = max(((get_current_session().queue_length() + SONGS_PER_PAGE - 1) // SONGS_PER_PAGE), 1)
+        else: 
+            self.pagemax = (get_current_session().queue_length() + SONGS_PER_PAGE - 1) // SONGS_PER_PAGE
     async def update_results(self):
 
         start_index = (self.page - 1) * SONGS_PER_PAGE
@@ -20,15 +22,13 @@ class QueueMenu(View):
         embed = discord.Embed(title=f'Queue for {get_current_session().get_title()}:', color=discord.Color.blue())
 
         for i in range(start_index, end_index):
-            song, author, user = get_current_session().queue[i % 5]
+            song, author, key, user = get_current_session().queue[i % 5]
             if i == 0:
-                embed.add_field(name=f'▶️ {song}', value=f'{author} • Queued by {user}', inline=False)
+                embed.add_field(name=f'▶️ {song}', value=f'{author} • Queued by {user} *(' + key + ')*', inline=False)
             else:
-                embed.add_field(name=str(i + 1) + f'. {song}', value=f'{author} • Queued by {user}', inline=False)
-        
+                embed.add_field(name=str(i + 1) + f'. {song}', value=f'{author} • Queued by {user} *(' + key + ')*', inline=False)
 
         embed.set_footer(text=f'Page {self.page} of {self.pagemax}', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhAS56v4R95lmRkF0Z9oqZH66WiBT8MSVWibktrMNzqw&s')
-
         
         return embed
 
@@ -43,43 +43,16 @@ class QueueMenu(View):
     async def interaction_check(self, interaction):
         return interaction.user == self.ctx.author
 
-    @button(label="Previous Page", style=discord.ButtonStyle.gray, row=1)
+    @button(emoji="⬅️", style=discord.ButtonStyle.gray, row=1)
     async def previous_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.page > 1:
             self.page -= 1
-
-            if self.page < self.results['pageCount']:
-                self.page += 1
-    
-                await interaction.response.defer()
-                embed = discord.Embed(title=f'Loading page {self.page} for {self.keyword}:', color=discord.Color.yellow())
-                start_index = (self.page - 1) * SONGS_PER_PAGE
-                end_index = min(self.page * SONGS_PER_PAGE, self.results['totalCount'])
-                for i in range(start_index, end_index):
-                    embed.add_field(name=str(i + 1) + f'. ----', value=f'--', inline=False)
-                embed.set_footer(text=f'Page {self.page} of ' + str(self.results['pageCount']))
-                await self.message.edit(embed=embed, view=self)
         
-                await self.show_results()
-            else: await interaction.response.defer()
+            await self.show_results()
 
-    @button(label="Next Page", style=discord.ButtonStyle.gray, row=1)
+    @button(emoji="➡️", style=discord.ButtonStyle.gray, row=1)
     async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.page < self.pagemax:
             self.page += 1
 
-            await interaction.response.defer()
-            embed = discord.Embed(title=f'Loading page {self.page} for {self.keyword}:', color=discord.Color.yellow())
-            start_index = (self.page - 1) * SONGS_PER_PAGE
-            end_index = min(self.page * SONGS_PER_PAGE, self.num_hits)
-            for i in range(start_index, end_index):
-                embed.add_field(name=str(i + 1) + f'. ----', value=f'--', inline=False)
-            embed.set_footer(text=f'Page {self.page} of {self.pagemax}')
-            await self.message.edit(embed=embed, view=self)
-
             await self.show_results()
-
-    @button(label="Close", style=discord.ButtonStyle.red, row=1)
-    async def cancel_search(self, interaction: discord.Interaction, button: discord.ui.Button):
-        click_button(Button.TOP)
-        await self.message.delete()

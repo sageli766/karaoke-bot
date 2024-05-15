@@ -3,7 +3,7 @@ from loguru import logger
 from PIL import Image
 import os
 
-window_size = (2258, 1307) # Size of the DAM window on a 2560x1440 screen
+window_size = (1616, 939) # Size of the DAM window on a 1920x1080 screen
 
 def get_window_pos():
     """
@@ -52,11 +52,11 @@ def check_images():
     reference_dir = "./images/reference"
     image_dir = "./images"
 
-    if (window_size != current_window_size or monitor_size != current_size) and all(not os.path.isfile(os.path.join(image_dir, filename)) for filename in os.listdir(image_dir)):
+    if all(not os.path.isfile(os.path.join(image_dir, filename)) for filename in os.listdir(image_dir)):
 
         prop = (current_size[0] / monitor_size[0], current_size[1] / monitor_size[1])
 
-        logger.debug("Current DAM window size " + str(current_window_size) + " != reference size " + str(window_size) + " and/or rescaled images not detected. Creating rescaled images.")
+        logger.debug("Rescaled images not detected. Creating rescaled images. " + str(current_window_size) + " -> " + str(window_size))
 
         x_scale, y_scale = get_scaling_factors()
 

@@ -8,6 +8,11 @@ while True:
     x = x - x1
     y = y - y1
 
-    # px = pyautogui.pixel(x, y)
+    #x, y = scaling.scale_xy_offset(193,1070)
+
+    #pyautogui.moveTo(x, y)
+
+    px = pyautogui.pixel(x, y)
     print(x, y)
+    #print(px)
     time.sleep(1)

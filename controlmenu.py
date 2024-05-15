@@ -37,7 +37,7 @@ class ControlMenu(View):
         else:
             self.message.edit(content="Error: different song. Retry $c", view=None)
 
-    @button(label="Restart", style=discord.ButtonStyle.red, row=1)
+    @button(label="Restart", style=discord.ButtonStyle.red, row=1, disabled=True)
     async def restart(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         if self.check_valid:
