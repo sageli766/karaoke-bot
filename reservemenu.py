@@ -101,5 +101,6 @@ class ReserveMenu(View):
             await self.message.edit(content=f"{self.ctx.author.display_name} reserved: **{name}** by **{artist}** *(" + self.key_mod + ")*", view=None, suppress=True)
         else:
             await self.message.edit(content=f"{self.ctx.author.display_name} reserved: **{name}** by **{artist}**", view=None, suppress=True)
-        await interaction.response.defer()
+
+        await search_keyword_and_reserve(name + " " + artist, self.key_mod)
 

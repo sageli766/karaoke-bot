@@ -30,8 +30,7 @@ current_song_playing = False
 
 @bot.event
 async def on_ready():
-    await search_keyword_and_reserve("ab", "+1")
-    task_loop.start()
+    # task_loop.start()
     print(f'Logged in as {bot.user}')
 
 @bot.slash_command(guild_ids = servers, name = 'jessie', description='傻逼')
@@ -93,24 +92,24 @@ async def search(ctx, keyword=discord.Option(str, description="any keyword you w
     await view.show_results()
 
 # view queue
-@bot.slash_command(guild_ids = servers, name = 'queue', description='view the list of currently queued songs.')
-async def queue(ctx):
-    end_index = min(5, get_current_session().queue_length())
+# @bot.slash_command(guild_ids = servers, name = 'queue', description='view the list of currently queued songs.')
+# async def queue(ctx):
+#     end_index = min(5, get_current_session().queue_length())
     
-    embed = discord.Embed(title=f'Queue for {get_current_session().get_title()}:', color=discord.Color.blue())
-    for i in range(0, end_index):
-        song, author, key, user = get_current_session().queue[i % 5]
-        if i == 0:
-            embed.add_field(name=f'▶️ {song}', value=f'by {author} • {user} (' + key + ')', inline=False)
-        else:
-            embed.add_field(name=str(i + 1) + f'. {song}', value=f'by {author} • {user} (' + key + ')', inline=False)
+#     embed = discord.Embed(title=f'Queue for {get_current_session().get_title()}:', color=discord.Color.blue())
+#     for i in range(0, end_index):
+#         song, author, key, user = get_current_session().queue[i % 5]
+#         if i == 0:
+#             embed.add_field(name=f'▶️ {song}', value=f'by {author} • {user} (' + key + ')', inline=False)
+#         else:
+#             embed.add_field(name=str(i + 1) + f'. {song}', value=f'by {author} • {user} (' + key + ')', inline=False)
         
-    if get_current_session().queue_length() % 5 == 0:
-        embed.set_footer(text=f'Page 1 of {max((get_current_session().queue_length() // 5), 1)}', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhAS56v4R95lmRkF0Z9oqZH66WiBT8MSVWibktrMNzqw&s')
-    else: 
-        embed.set_footer(text=f'Page 1 of {(get_current_session().queue_length() // 5)}', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhAS56v4R95lmRkF0Z9oqZH66WiBT8MSVWibktrMNzqw&s')
+#     if get_current_session().queue_length() % 5 == 0:
+#         embed.set_footer(text=f'Page 1 of {max((get_current_session().queue_length() // 5), 1)}', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhAS56v4R95lmRkF0Z9oqZH66WiBT8MSVWibktrMNzqw&s')
+#     else: 
+#         embed.set_footer(text=f'Page 1 of {(get_current_session().queue_length() // 5)}', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhAS56v4R95lmRkF0Z9oqZH66WiBT8MSVWibktrMNzqw&s')
 
-    await ctx.respond(embed=embed, view=QueueMenu(ctx))
+#     await ctx.respond(embed=embed, view=QueueMenu(ctx))
 
 # controls
 @bot.slash_command(guild_ids = servers, name = 'controls', description='get a control panel of options for the currently playing song.')
@@ -130,42 +129,42 @@ async def get_pixel_color(x, y):
     pixel = screenshot.getpixel((x, y))
     return pixel
 
-@tasks.loop(seconds=10)
-async def task_loop():
-    global popped, current_song_playing
+# @tasks.loop(seconds=10)
+# async def task_loop():
+#     global popped, current_song_playing
 
-    if get_current_session():
+#     if get_current_session():
     
-        x, y = scaling.scale_xy_offset(139, 769)
-        while True:
-            if not current_song_playing:
-                x1, y1 = scaling.scale_xy_offset(548, 680)
-                current_color = await get_pixel_color(x1, y1)
-                if current_color == (205, 29, 27):
-                    click_button(Button.GRADING_START)
-                    click_button(Button.MOUSE_RESET)
-                    logger.debug("color is red!")
+#         x, y = scaling.scale_xy_offset(139, 769)
+#         while True:
+#             if not current_song_playing:
+#                 x1, y1 = scaling.scale_xy_offset(548, 680)
+#                 current_color = await get_pixel_color(x1, y1)
+#                 if current_color == (205, 29, 27):
+#                     click_button(Button.GRADING_START)
+#                     click_button(Button.MOUSE_RESET)
+#                     logger.debug("color is red!")
 
-            current_color = await get_pixel_color(x, y)
-            if current_color == (112, 154, 251):
-                if not current_song_playing:
-                    current_song_playing = True
-                    popped = False
-                    logger.debug("color is blue!")
-            elif current_color == (2, 3, 5) and current_song_playing:
-                current_song_playing = False
-                get_current_session().remove_from_queue()
-                logger.debug("Song is still playing, color is not blue")
-            elif current_color == (2, 3, 5):
-                if get_current_session():
-                    if get_current_session().queue_length() > 0:
-                        if not popped:
-                            popped = True
-                            song = get_current_session().get_current_song()
-                            await search_keyword_and_reserve(song[0] + " " + song[1], song[2])
-                logger.debug("color is not blue, song is not playing")
+#             current_color = await get_pixel_color(x, y)
+#             if current_color == (112, 154, 251):
+#                 if not current_song_playing:
+#                     current_song_playing = True
+#                     popped = False
+#                     logger.debug("color is blue!")
+#             elif current_color == (2, 3, 5) and current_song_playing:
+#                 current_song_playing = False
+#                 get_current_session().remove_from_queue()
+#                 logger.debug("Song is still playing, color is not blue")
+#             elif current_color == (2, 3, 5):
+#                 if get_current_session():
+#                     if get_current_session().queue_length() > 0:
+#                         if not popped:
+#                             popped = True
+#                             song = get_current_session().get_current_song()
+#                             await search_keyword_and_reserve(song[0] + " " + song[1], song[2])
+#                 logger.debug("color is not blue, song is not playing")
         
-            await asyncio.sleep(3)
+#             await asyncio.sleep(3)
             
         
 
