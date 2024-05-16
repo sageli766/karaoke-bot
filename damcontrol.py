@@ -6,6 +6,8 @@ from loguru import logger
 import pyperclip
 from enum import Enum
 import scaling
+import pynput
+from pynput import mouse
 
 class Button(Enum):
     SKIP = 539, 866
@@ -40,9 +42,9 @@ def click_button(button):
     Click on a button. pass in damvision.Button enums.
     """
     x, y = button.value
-    pyautogui.moveTo(scaling.scale_xy_offset(x, y))
-    pyautogui.mouseDown()
-    pyautogui.mouseUp()
+    x, y = scaling.scale_xy_offset(x, y)
+    pyautogui.mouseDown(x, y)
+    pyautogui.mouseUp(x, y)
 
     logger.debug(str(button) + " clicked")
 
@@ -78,13 +80,36 @@ def parse_instructions(instructions):
             pass
         time.sleep(delay)
 
+listener = None
+def make_listener():
+    global listener
+
+    def on_move(x, y):
+        # nicely parsed event data available here
+        listener.suppress_event()
+
+    # def win32_event_filter(msg, data):
+    #     # raw event msg available here
+    #     listener.suppress_event()ab
+    #     return True
+    
+    listener = mouse.Listener(on_move=on_move,
+                       suppress=False)
+
+    return listener
+
 async def search_keyword_and_reserve(keyword, key):
+    window = pyautogui.getWindowsWithTitle("(KARAOKE@DAM)")[0]
+    window.minimize()
+    window.restore()
+    listener = make_listener()
+    listener.start()
+    
     logger.info("reserving first keyword search result for: " + keyword)
 
     pyperclip.copy(keyword)
 
     click_button(Button.SEARCH_KEYWORD)
-    await asyncio.sleep(0.1)
     pyautogui.keyDown('ctrlleft')
     pyautogui.keyDown('v')
     pyautogui.keyUp('v')
@@ -92,7 +117,7 @@ async def search_keyword_and_reserve(keyword, key):
     
     click_button(Button.SUBMIT_SEARCH)
     click_button(Button.MOUSE_RESET)
-    
+
     while search_loading(): 
         await asyncio.sleep(0.5)
     
@@ -103,6 +128,7 @@ async def search_keyword_and_reserve(keyword, key):
     click_button(Button.RESERVE)
     await asyncio.sleep(1.5)
     click_button(Button.TOP)
+    listener.stop()
 
 async def change_key(key):
     direction = key[0]

@@ -56,7 +56,7 @@ def check_images():
 
         prop = (current_size[0] / monitor_size[0], current_size[1] / monitor_size[1])
 
-        logger.debug("Rescaled images not detected. Creating rescaled images. " + str(current_window_size) + " -> " + str(window_size))
+        logger.debug("Rescaled images not detected. Creating rescaled images. " + str(window_size) + " -> " + str(current_window_size))
 
         x_scale, y_scale = get_scaling_factors()
 
