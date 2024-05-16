@@ -30,7 +30,6 @@ current_song_playing = False
 
 @bot.event
 async def on_ready():
-    await search_keyword_and_reserve("ab", "+1")
     task_loop.start()
     print(f'Logged in as {bot.user}')
 
