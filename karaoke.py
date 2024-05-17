@@ -5,6 +5,27 @@ class Karaoke():
 
     def __init__(self, title):
         self.title = title
+        self.new_song_playing = False
+        self.results_shown = False
+        self.first_song = True
+
+    def update_new_song_playing(self, new_song_playing):
+        self.new_song_playing = new_song_playing
+
+    def update_results_shown(self, results_shown):
+        self.results_shown = results_shown
+
+    def update_first_song(self, first_song):
+        self.first_song = first_song
+
+    def is_new_song_playing(self):
+        return self.new_song_playing
+
+    def is_results_shown(self):
+        return self.results_shown
+
+    def is_first_song(self):
+        return self.first_song
 
     def get_title(self):
         return self.title

@@ -3,18 +3,17 @@ from discord.ext import tasks
 import sys
 import pyautogui
 import asyncio
+from proxy import InterceptRequests
+import nest_asyncio
+nest_asyncio.apply()
 
 import damapi
-import damvision
 from karaoke import Karaoke, get_current_session, set_current_session
 from damcontrol import *
-import scaling
 
 from searchmenu import SearchMenu
 from controlmenu import ControlMenu
 from queuemenu import QueueMenu
-from reservemenu import ReserveMenu
-
 
 client_id = sys.argv[1]
 bot = discord.Bot()
@@ -24,13 +23,46 @@ servers = ['1239006599633305620',
            ]
 
 # TODO restart logic, top chart
+queued = False
 
-popped = False
-current_song_playing = False
+@tasks.loop(seconds=5)
+async def start_proxy():
+    from mitmproxy.tools.main import mitmdump
+
+    logger.info("Starting proxy...")
+    mitmdump(['-s', 'proxy.py', '--quiet'])
+
+@tasks.loop(seconds=2)
+async def update_queue():
+    global queued
+    session = get_current_session()
+    if not session: return
+
+    if queued and session.is_new_song_playing():
+            queued = False
+        
+    if  not queued and session.is_results_shown() and session.queue_length() > 0:
+        queued = True
+        logger.debug("adding next song to queue")
+        song = session.remove_from_queue()
+        await search_keyword_and_reserve(song[0] + " " + song[1], song[2])
+    elif not queued and not session.is_new_song_playing() and session.queue_length() > 0:
+        queued = True
+        song = session.remove_from_queue()
+        logger.debug("adding song to queue")
+        await search_keyword_and_reserve(song[0] + " " + song[1], song[2])
+    
+    # print("new_song_playing: " + str(session.is_new_song_playing()))
+    # print("results_shown: " + str(session.is_results_shown()))
+    # print("is_first_song: " + str(session.is_first_song()))
+    # print("popped: " + str(queued))
+    # print(session.queue_length())
+
 
 @bot.event
 async def on_ready():
-    task_loop.start()
+    start_proxy.start()
+    update_queue.start()
     print(f'Logged in as {bot.user}')
 
 @bot.slash_command(guild_ids = servers, name = 'jessie', description='傻逼')
@@ -45,8 +77,8 @@ async def sage(ctx, name):
 @bot.slash_command(guild_ids = servers, name = 'start', description='start a new session')
 async def start(ctx, name=discord.Option(str, description="Name of the session")):
     # TODO check if session already exists
-    global popped, current_song_playing
-    popped = False
+    global queued, current_song_playing
+    queued = False
     current_song_playing = False
     set_current_session(Karaoke(name))
     logger.debug("session started: " + str(get_current_session()))
@@ -94,20 +126,21 @@ async def search(ctx, keyword=discord.Option(str, description="any keyword you w
 # view queue
 @bot.slash_command(guild_ids = servers, name = 'queue', description='view the list of currently queued songs.')
 async def queue(ctx):
-    end_index = min(5, get_current_session().queue_length())
+    session = get_current_session()
+    end_index = min(5, session.queue_length())
     
-    embed = discord.Embed(title=f'Queue for {get_current_session().get_title()}:', color=discord.Color.blue())
-    for i in range(0, end_index):
-        song, author, key, user = get_current_session().queue[i % 5]
-        if i == 0:
-            embed.add_field(name=f'▶️ {song}', value=f'by {author} • {user} (' + key + ')', inline=False)
-        else:
-            embed.add_field(name=str(i + 1) + f'. {song}', value=f'by {author} • {user} (' + key + ')', inline=False)
-        
-    if get_current_session().queue_length() % 5 == 0:
-        embed.set_footer(text=f'Page 1 of {max((get_current_session().queue_length() // 5), 1)}', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhAS56v4R95lmRkF0Z9oqZH66WiBT8MSVWibktrMNzqw&s')
-    else: 
-        embed.set_footer(text=f'Page 1 of {(get_current_session().queue_length() // 5)}', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhAS56v4R95lmRkF0Z9oqZH66WiBT8MSVWibktrMNzqw&s')
+    embed = discord.Embed(title=f'Queue for {session.get_title()}:', color=discord.Color.blue())
+    
+    # Display currently playing song
+    if session.now_playing:
+        song, author, key, user = session.now_playing
+        embed.add_field(name=f'▶️ *{song}', value=f'by {author} • {user} (' + key + ')*', inline=False)
+    
+    # Display queued songs starting from index 1
+    for i in range(end_index):
+        song, author, key, user = session.queue[i % 5]
+        embed.add_field(name=str(i + 1) + f'. {song}', value=f'by {author} • {user} (' + key + ')', inline=False)
+        embed.set_footer(text=f'Page 1 of {max(((session.queue_length() + 4)// 5), 1)}', icon_url='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhAS56v4R95lmRkF0Z9oqZH66WiBT8MSVWibktrMNzqw&s')
 
     await ctx.respond(embed=embed, view=QueueMenu(ctx))
 
@@ -128,45 +161,5 @@ async def get_pixel_color(x, y):
     screenshot = await loop.run_in_executor(None, pyautogui.screenshot)
     pixel = screenshot.getpixel((x, y))
     return pixel
-
-@tasks.loop(seconds=10)
-async def task_loop():
-    global popped, current_song_playing
-
-    if get_current_session():
-    
-        x, y = scaling.scale_xy_offset(139, 769)
-        while True:
-            if not current_song_playing:
-                x1, y1 = scaling.scale_xy_offset(548, 680)
-                current_color = await get_pixel_color(x1, y1)
-                if current_color == (205, 29, 27):
-                    click_button(Button.GRADING_START)
-                    click_button(Button.MOUSE_RESET)
-                    logger.debug("color is red!")
-
-            current_color = await get_pixel_color(x, y)
-            if current_color == (112, 154, 251):
-                if not current_song_playing:
-                    current_song_playing = True
-                    popped = False
-                    logger.debug("color is blue!")
-            elif current_color == (2, 3, 5) and current_song_playing:
-                current_song_playing = False
-                get_current_session().remove_from_queue()
-                logger.debug("Song is still playing, color is not blue")
-            elif current_color == (2, 3, 5):
-                if get_current_session():
-                    if get_current_session().queue_length() > 0:
-                        if not popped:
-                            popped = True
-                            song = get_current_session().get_current_song()
-                            await search_keyword_and_reserve(song[0] + " " + song[1], song[2])
-                logger.debug("color is not blue, song is not playing")
         
-            await asyncio.sleep(3)
-            
-        
-
-
 bot.run(f'{client_id}')
