@@ -24,7 +24,7 @@ async def get_song_info(response_json):
         scoreFlag = song.get('scoreFlag', '')
         song_info_list.append((title, artist, releaseDate, highlightLyrics, playbackTime, guideVocalFlag, scoreFlag))
     
-    logger.debug(song_info_list)
+    # logger.debug(song_info_list)
 
     return {
         'songs': song_info_list,

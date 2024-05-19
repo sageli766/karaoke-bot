@@ -29,7 +29,7 @@ queued = False
 async def start_proxy():
     from mitmproxy.tools.main import mitmdump
 
-    logger.info("Starting proxy...")
+    logger.info("Proxy started.")
     mitmdump(['-s', 'proxy.py', '--quiet'])
 
 @tasks.loop(seconds=2)
@@ -63,7 +63,7 @@ async def update_queue():
 async def on_ready():
     start_proxy.start()
     update_queue.start()
-    print(f'Logged in as {bot.user}')
+    logger.info(f'Successfully logged in as {bot.user}')
 
 @bot.slash_command(guild_ids = servers, name = 'jessie', description='傻逼')
 async def jessie(ctx, name):

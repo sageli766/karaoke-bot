@@ -57,7 +57,7 @@ class SearchMenu(View):
     async def update_buttons(self):
         start_index = (self.page - 1) * SONGS_PER_PAGE
         await self.delete_buttons(start_index)
-        logger.debug(str(start_index) + " " + str(min(start_index + SONGS_PER_PAGE, self.results['totalCount'])))
+        # logger.debug(str(start_index) + " " + str(min(start_index + SONGS_PER_PAGE, self.results['totalCount'])))
         for i in range(start_index, min(start_index + SONGS_PER_PAGE, self.results['totalCount'])):
             self.add_item(self.add_number_button(i+1, self.results['songs'][i % 5], self.ctx, self))
     

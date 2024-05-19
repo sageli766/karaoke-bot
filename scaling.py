@@ -71,5 +71,14 @@ def check_images():
                 new_filename = filename.replace("_og.png", ".png")
                 resized_img.save(os.path.join(image_dir, new_filename))
 
-logger.debug(str(pyautogui.getWindowsWithTitle("(KARAOKE@DAM)")[0]))
-check_images()
+window = None
+try:
+    pyautogui.getWindowsWithTitle("(KARAOKE@DAM)")[0]
+except IndexError:
+    pass
+
+if window:
+    logger.debug(str("DAM window detected: " + pyautogui.getWindowsWithTitle("(KARAOKE@DAM)")[0]))
+    check_images()
+else:
+    logger.warning("DAM window not detected. Only the search operation will work.")

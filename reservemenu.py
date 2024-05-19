@@ -2,8 +2,37 @@ import discord
 from discord.ui import View, button
 import re
 
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+
 from damcontrol import *
 from karaoke import get_current_session
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
+CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
+
+client_credentials_manager = SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
+sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+
+def get_cover_image(song_name):
+    results = sp.search(q=song_name, type='track', limit=2)  # Increase limit to get more results
+    if results['tracks']['items']:
+        max_popularity = -1
+        cover_image_url = None
+
+        for track in results['tracks']['items']:
+            if track['popularity'] > max_popularity:
+                max_popularity = track['popularity']
+                cover_image_url = track['album']['images'][0]['url']
+
+        return cover_image_url
+    else:
+        return 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s'
 
 class ReserveMenu(View):
     def __init__(self, ctx, song_info, prev_view):
@@ -33,7 +62,7 @@ class ReserveMenu(View):
                         value=release_date,
                         inline=True)
 
-        embed.set_thumbnail(url="https://dan.onl/images/emptysong.jpg")
+        embed.set_thumbnail(url=get_cover_image(song_name + " " + artist))
 
         embed.set_footer(text="Press \"Reserve\" to add to queue.",
                          icon_url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s")
