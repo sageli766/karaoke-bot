@@ -6,7 +6,6 @@ from loguru import logger
 import pyperclip
 from enum import Enum
 import scaling
-import pynput
 from pynput import mouse
 
 class Button(Enum):

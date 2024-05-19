@@ -3,7 +3,6 @@ from discord.ui import View, button
 
 import damapi
 from damcontrol import *
-from karaoke import get_current_session
 from reservemenu import ReserveMenu
 
 SONGS_PER_PAGE = 5
@@ -16,7 +15,7 @@ class SearchMenu(View):
         self.page = 1
         self.message = message
 
-    async def update_results(self):
+    async def update_embed(self):
         start_index = (self.page - 1) * SONGS_PER_PAGE
         end_index = min(self.page * SONGS_PER_PAGE, self.results['totalCount'])
         
@@ -36,7 +35,7 @@ class SearchMenu(View):
         return embed
 
     async def show_results(self):
-        await self.message.edit(content='', embed=await self.update_results(), view=self)
+        await self.message.edit(content='', embed=await self.update_embed(), view=self)
 
     async def interaction_check(self, interaction):
         return interaction.user == self.ctx.author
@@ -54,48 +53,37 @@ class SearchMenu(View):
             await interaction.message.edit(embed=embed, view=view)  # update message
             await interaction.response.defer()
 
-    async def update_buttons(self):
-        start_index = (self.page - 1) * SONGS_PER_PAGE
-        await self.delete_buttons(start_index)
-        # logger.debug(str(start_index) + " " + str(min(start_index + SONGS_PER_PAGE, self.results['totalCount'])))
-        for i in range(start_index, min(start_index + SONGS_PER_PAGE, self.results['totalCount'])):
-            self.add_item(self.add_number_button(i+1, self.results['songs'][i % 5], self.ctx, self))
+    class add_prev_page_button(discord.ui.Button):
+        def __init__(self, view, emoji, disabled):
+            super().__init__(emoji=emoji, style=discord.ButtonStyle.gray, row=2, disabled=disabled)
+            self.search_view = view  # Use a different attribute name
     
-    async def delete_buttons(self, from_index):
+        async def callback(self, interaction: discord.Interaction):
+            self.search_view.page -= 1
+            await self.search_view.update_page(interaction)
+    
+    class add_next_page_button(discord.ui.Button):
+        def __init__(self, view, emoji, disabled):
+            super().__init__(emoji=emoji, style=discord.ButtonStyle.gray, row=2, disabled=disabled)
+            self.search_view = view  # Use a different attribute name
+    
+        async def callback(self, interaction: discord.Interaction):
+            self.search_view.page += 1
+            await self.search_view.update_page(interaction)
+    
+    async def update_buttons(self):
+        self.clear_items()
+        start_index = (self.page - 1) * SONGS_PER_PAGE
 
-        buttons = [button for button in self.children]
+        for i in range(start_index, min(start_index + SONGS_PER_PAGE, self.results['totalCount'])):
+            self.add_item(self.add_number_button(i + 1, self.results['songs'][i % 5], self.ctx, self))
+        
+        previous_disabled = self.page == 1
+        next_disabled = self.page == self.results['pageCount']
+        
+        self.add_item(self.add_prev_page_button(self, "⬅️", previous_disabled))
+        self.add_item(self.add_next_page_button(self, "➡️", next_disabled))
 
-        for button in buttons:
-            if isinstance(button.label, int):
-                logger.debug("button has int: " + str(button))
-                if button.label <= from_index or button.label > from_index + 5:
-                    logger.debug("removing " + str(button))
-                    self.remove_item(button)
-
-    @button(emoji="⬅️", style=discord.ButtonStyle.gray, row=2, disabled=True)
-    async def previous_page(self, button, interaction):
-        logger.debug(self.page)
-        if self.page > 1:
-            self.page -= 1
-            for button1 in self.children:
-                if button1.emoji and button1.emoji.name == '➡️':
-                    button1.disabled = False
-            if self.page == 1:
-                logger.debug("disabled button")
-                button.disabled = True
-            await self.update_page(interaction)
-
-
-    @button(emoji="➡️", style=discord.ButtonStyle.gray, row=2)
-    async def next_page(self, button, interaction):
-        if self.page < self.results['pageCount']:
-            self.page += 1
-            for button1 in self.children:
-                if button1.emoji and button1.emoji.name == '⬅️':
-                    button1.disabled = False
-            if self.page == self.results['pageCount']:
-                button.disabled = True
-            await self.update_page(interaction) #TODO gray out if no results
 
     async def update_page(self, interaction):
         await self.show_loading_page()
@@ -111,4 +99,27 @@ class SearchMenu(View):
         for i in range(start_index, end_index):
             embed.add_field(name=str(i + 1) + f'. ----', value=f'--', inline=False)
         embed.set_footer(text=f'Page {self.page} of ' + str(self.results['pageCount']))
-        await self.message.edit(embed=embed, view=None)
+        await self.message.edit(embed=embed, view=LoadingView())
+
+class LoadingView(discord.ui.View): # Create a class called MyView that subclasses discord.ui.View
+    @discord.ui.button(label="--", style=discord.ButtonStyle.gray, disabled=True, row=1)
+    async def a(self, button, interaction):
+        pass
+    @discord.ui.button(label="--", style=discord.ButtonStyle.gray, disabled=True, row=1)
+    async def b(self, button, interaction):
+        pass
+    @discord.ui.button(label="--", style=discord.ButtonStyle.gray, disabled=True, row=1)
+    async def c(self, button, interaction):
+        pass
+    @discord.ui.button(label="--", style=discord.ButtonStyle.gray, disabled=True, row=1)
+    async def d(self, button, interaction):
+        pass
+    @discord.ui.button(label="--", style=discord.ButtonStyle.gray, disabled=True, row=1)
+    async def e(self, button, interaction):
+        pass
+    @discord.ui.button(emoji="⬅️", style=discord.ButtonStyle.gray, disabled=True, row=2)
+    async def f(self, button, interaction):
+        pass
+    @discord.ui.button(emoji="➡️", style=discord.ButtonStyle.gray, disabled=True, row=2)
+    async def g(self, button, interaction):
+        pass

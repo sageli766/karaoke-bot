@@ -105,6 +105,7 @@ class ReserveMenu(View):
     async def previous_page(self, button, interaction):
         # await self.prev_view.update_buttons()
         await interaction.response.defer()
+        await self.prev_view.update_buttons()
         await self.prev_view.show_results()
 
     # if backing_vocals == "0" disable the button

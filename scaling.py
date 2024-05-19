@@ -73,12 +73,12 @@ def check_images():
 
 window = None
 try:
-    pyautogui.getWindowsWithTitle("(KARAOKE@DAM)")[0]
+    window = pyautogui.getWindowsWithTitle("(KARAOKE@DAM)")[0]
 except IndexError:
     pass
 
 if window:
-    logger.debug(str("DAM window detected: " + pyautogui.getWindowsWithTitle("(KARAOKE@DAM)")[0]))
+    logger.info(str("DAM window detected: " + str(window)))
     check_images()
 else:
     logger.warning("DAM window not detected. Only the search operation will work.")

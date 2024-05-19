@@ -3,7 +3,6 @@ from discord.ext import tasks
 import sys
 import pyautogui
 import asyncio
-from proxy import InterceptRequests
 import nest_asyncio
 nest_asyncio.apply()
 
