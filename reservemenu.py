@@ -19,20 +19,21 @@ CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
 client_credentials_manager = SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
 sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
-def get_cover_image(song_name):
-    results = sp.search(q=song_name, type='track', limit=2)  # Increase limit to get more results
-    if results['tracks']['items']:
-        max_popularity = -1
-        cover_image_url = None
+def get_song_info(search):
+    song_search_results = sp.search(q=search, type='track', limit=1)
 
-        for track in results['tracks']['items']:
-            if track['popularity'] > max_popularity:
-                max_popularity = track['popularity']
-                cover_image_url = track['album']['images'][0]['url']
-
-        return cover_image_url
+    if song_search_results['tracks']['items']:
+        track = song_search_results['tracks']['items'][0]
+        song_url = track['external_urls']['spotify']
+        cover_image_url = track['album']['images'][0]['url']
+        artist_url = track['artists'][0]['external_urls']['spotify']
     else:
-        return 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s'
+        song_url = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s"
+        cover_image_url = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s'
+        artist_url = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s"
+
+    return song_url, cover_image_url, artist_url
+
 
 class ReserveMenu(View):
     def __init__(self, ctx, song_info, prev_view):
@@ -44,25 +45,28 @@ class ReserveMenu(View):
 
     async def create_embed(self):
         song_name, artist, release_date, highlight_lyrics, playback_time, guide_vocal_flag, score_flag = self.song_info
+        song_url, cover_image_url, artist_url = get_song_info(song_name + " " + artist)
 
         embed = discord.Embed(title=song_name,
                           description="",
-                          colour=0x00b0f4)
+                          colour=0x00b0f4,
+                          url=song_url
+                          )
 
         embed.set_author(name=artist,
-                         url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s",)
+                         url=artist_url,)
 
         embed.add_field(name="Lyrics Preview",
-                        value=highlight_lyrics,
+                        value=highlight_lyrics[4:] + "...",
                         inline=False)
         embed.add_field(name="Runtime",
                         value=f"{playback_time // 60:02d}:{playback_time % 60:02d}",
                         inline=True)
-        embed.add_field(name="Release Date",
+        embed.add_field(name="Release Date (DAM)",
                         value=release_date,
                         inline=True)
 
-        embed.set_thumbnail(url=get_cover_image(song_name + " " + artist))
+        embed.set_thumbnail(url=cover_image_url)
 
         embed.set_footer(text="Press \"Reserve\" to add to queue.",
                          icon_url="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHfcxYZjBZ2U3rgSspBSkRWU-Ynyh-P-okUNhnUu0Z3A&s")
